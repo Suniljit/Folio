@@ -2,7 +2,7 @@
 
 ## Overview
 
-Portfolio Manager is a single-user, locally-hosted web app. There is no server-side backend beyond what Streamlit provides — the Python script IS the server. Data lives in a local SQLite file; prices are fetched on-demand from Yahoo Finance via yfinance.
+Folio is a single-user, locally-hosted web app. There is no server-side backend beyond what Streamlit provides — the Python script IS the server. Data lives in a local SQLite file; prices are fetched on-demand from Yahoo Finance via yfinance.
 
 ```
 Browser (localhost:8501)

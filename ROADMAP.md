@@ -122,7 +122,7 @@ Thresholds are configurable from the Settings tab.
 - [x] Streamlit editable table (company, ticker, shares, avg price, fees)
 - [x] Summary metrics: Market Value, Total Cost, Unrealized P&L
 - [x] Save button with cache-clear on save
-- [ ] Rename app to **Folio**
+- [x] Rename app to **Folio**
 - [ ] Migrate `db.py` to **SQLModel** (before any new features)
 - [ ] Add/Edit stock via **popup form** (not inline table editing); ticker locked after creation
 - [ ] New stock fields: `sector` (GICS dropdown), `intrinsic_value`, `target_allocation_pct`, `dividend_received`, `remarks`

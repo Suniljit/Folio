@@ -5,8 +5,8 @@ from streamlit_autorefresh import st_autorefresh
 from db import get_holdings, init_db, save_holdings
 from prices import fetch_prices
 
-st.set_page_config(page_title="Portfolio Tracker", layout="wide")
-st.title("Portfolio Tracker")
+st.set_page_config(page_title="Folio", layout="wide")
+st.title("Folio")
 
 st_autorefresh(interval=30_000, key="price_refresh")
 
