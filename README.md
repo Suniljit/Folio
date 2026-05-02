@@ -1,6 +1,6 @@
-# Portfolio Manager
+# Folio
 
-A personal stock portfolio tracker built with Streamlit and Python. Track holdings, view live prices, and monitor unrealized P&L in a single editable table.
+A personal portfolio tracker built with Streamlit and Python. Track holdings, view live prices, and monitor unrealized P&L in a single editable table.
 
 ## Features
 
@@ -30,7 +30,7 @@ The app opens at `http://localhost:8501`.
 ## Project layout
 
 ```
-portfolio_manager/
+folio/
 ├── app.py           # Streamlit UI
 ├── db.py            # SQLite read/write
 ├── prices.py        # yfinance price fetching

@@ -1,6 +1,6 @@
 # ADR Index
 
-Architectural Decision Records for Portfolio Manager.
+Architectural Decision Records for Folio.
 
 | # | Title | Status | Summary |
 |---|-------|--------|---------|
