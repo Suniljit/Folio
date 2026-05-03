@@ -9,6 +9,7 @@ Architectural Decision Records for Folio.
 | [003](003-price-data-source.md) | Price data source | Accepted | yfinance chosen over Finnhub and Twelve Data |
 | [004](004-auto-refresh-strategy.md) | Auto-refresh strategy | Accepted | `streamlit-autorefresh` chosen over `time.sleep` and a manual button |
 | [005](005-save-strategy.md) | Save strategy | Accepted | Explicit save button chosen over auto-save on edit |
+| [006](006-orm.md) | ORM | Accepted | SQLModel + Alembic chosen over raw sqlite3 |
 
 ## Format
 
