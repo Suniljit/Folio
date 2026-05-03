@@ -3,6 +3,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 from db import get_holdings, init_db, save_holdings
+from models import Holding
 from prices import fetch_prices
 
 st.set_page_config(page_title="Folio", layout="wide")
@@ -13,7 +14,7 @@ st_autorefresh(interval=30_000, key="price_refresh")
 init_db()
 
 holdings = get_holdings()
-tickers = list({h["ticker"].upper() for h in holdings if h["ticker"].strip()})
+tickers = list({h.ticker.upper() for h in holdings if h.ticker.strip()})
 
 
 @st.cache_data(ttl=30)
@@ -25,7 +26,7 @@ prices = _fetch_prices(tuple(sorted(tickers)))
 
 # Build dataframe
 if holdings:
-    df = pd.DataFrame(holdings)
+    df = pd.DataFrame([h.model_dump() for h in holdings])
 else:
     df = pd.DataFrame(
         columns=["id", "company_name", "ticker", "shares_owned", "avg_price", "fees"]
@@ -92,13 +93,13 @@ if st.button("Save Changes", type="primary"):
         if not ticker:
             continue
         save_rows.append(
-            {
-                "company_name": str(row.get("company_name") or ""),
-                "ticker": ticker,
-                "shares_owned": float(row.get("shares_owned") or 0),
-                "avg_price": float(row.get("avg_price") or 0),
-                "fees": float(row.get("fees") or 0),
-            }
+            Holding(
+                company_name=str(row.get("company_name") or ""),
+                ticker=ticker,
+                shares_owned=float(row.get("shares_owned") or 0),
+                avg_price=float(row.get("avg_price") or 0),
+                fees=float(row.get("fees") or 0),
+            )
         )
     save_holdings(save_rows)
     _fetch_prices.clear()
