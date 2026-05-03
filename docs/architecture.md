@@ -38,13 +38,19 @@ Responsibilities:
 
 ### `db.py` — Persistence layer
 
-Thin wrapper around Python's built-in `sqlite3`. No ORM.
+SQLModel ORM over SQLite. Schema is version-controlled via Alembic.
 
-- `init_db()` — idempotent schema creation (`CREATE TABLE IF NOT EXISTS`)
-- `get_holdings()` — `SELECT *` ordered by insertion ID, returns `list[dict]`
-- `save_holdings(rows)` — full replace: `DELETE FROM holdings` then batch `INSERT`
+- `init_db()` — runs `alembic upgrade head` on startup; applies any pending migrations
+- `get_holdings()` — typed query returning `list[Holding]`, ordered by `id`
+- `save_holdings(rows)` — full replace: deletes all rows then inserts the new list in a single session
 
-The full-replace pattern is intentional: the portfolio is small, there are no foreign key relationships, and it avoids the complexity of diffing inserts/updates/deletes.
+The full-replace pattern is intentional: the portfolio is small, there are no foreign key relationships yet, and it avoids the complexity of diffing inserts/updates/deletes.
+
+### `models.py` — Data models
+
+SQLModel class definitions. `Holding` is the single model today; future tables (options, watchlist, etc.) will be added here.
+
+Each class declared with `table=True` maps directly to a SQLite table and doubles as a typed Python dataclass.
 
 ### `prices.py` — Price fetching
 
@@ -59,8 +65,8 @@ Price fetching is wrapped in `app.py` with `@st.cache_data(ttl=30)`, so Yahoo Fi
 ```
 st_autorefresh fires (every 30s)
   → Streamlit reruns app.py
-  → init_db()          (no-op if schema exists)
-  → get_holdings()     (read from portfolio.db)
+  → init_db()          (alembic upgrade head — no-op if already at head)
+  → get_holdings()     (returns list[Holding] from portfolio.db)
   → _fetch_prices()    (cached; hits Yahoo Finance if TTL expired)
   → build DataFrame    (stored fields + calculated fields)
   → render metrics + st.data_editor
@@ -72,7 +78,7 @@ st_autorefresh fires (every 30s)
 User clicks "Save Changes"
   → app.py reads edited_df from st.data_editor
   → filters rows with empty ticker
-  → save_holdings(rows)   → DELETE + INSERT in portfolio.db
+  → save_holdings(rows)   → DELETE + INSERT list[Holding] in portfolio.db
   → _fetch_prices.clear() → invalidate price cache
   → st.rerun()            → triggers immediate page reload
 ```

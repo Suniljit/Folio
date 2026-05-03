@@ -32,8 +32,11 @@ The app opens at `http://localhost:8501`.
 ```
 folio/
 ├── app.py           # Streamlit UI
-├── db.py            # SQLite read/write
+├── db.py            # SQLModel sessions: init_db, get_holdings, save_holdings
+├── models.py        # SQLModel table definitions (Holding, and future models)
 ├── prices.py        # yfinance price fetching
+├── alembic.ini      # Alembic configuration
+├── alembic/         # database migration scripts
 ├── pyproject.toml   # dependencies and tooling config
 ├── portfolio.db     # SQLite database (created on first run, git-ignored)
 ├── README.md        # this file
