@@ -1,18 +1,27 @@
 # Data Model
 
-## SQLite schema
+## Schema
 
-File: `portfolio.db` (created at the project root on first run).
+File: `portfolio.db` (created at the project root on first run via `alembic upgrade head`).
 
-```sql
-CREATE TABLE IF NOT EXISTS holdings (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_name  TEXT    NOT NULL DEFAULT '',
-    ticker        TEXT    NOT NULL,
-    shares_owned  REAL    NOT NULL DEFAULT 0,
-    avg_price     REAL    NOT NULL DEFAULT 0,
-    fees          REAL    NOT NULL DEFAULT 0
-);
+The schema is declared in `models.py` as a SQLModel class:
+
+```python
+class Holding(SQLModel, table=True):
+    __tablename__ = "holdings"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_name: str = Field(default="")
+    ticker: str
+    shares_owned: float = Field(default=0.0)
+    avg_price: float = Field(default=0.0)
+    fees: float = Field(default=0.0)
+```
+
+Schema changes are managed by Alembic. Add a migration with:
+```bash
+alembic revision --autogenerate -m "description"
+alembic upgrade head
 ```
 
 Only the five user-supplied fields are persisted. All other columns shown in the UI are computed at render time.
@@ -53,11 +62,14 @@ Total Unrealized P/L = Σ unrealized_pl
 
 ## Save behaviour
 
-`save_holdings(rows)` performs a full replace inside a single transaction:
+`save_holdings(rows)` performs a full replace inside a single SQLModel session:
 
 ```python
-conn.execute("DELETE FROM holdings")
-conn.executemany("INSERT INTO holdings (...) VALUES (...)", rows)
+session.exec(delete(Holding))
+for h in rows:
+    h.id = None  # let DB assign new IDs
+    session.add(h)
+session.commit()
 ```
 
 This means:
