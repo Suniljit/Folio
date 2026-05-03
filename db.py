@@ -1,35 +1,29 @@
-import sqlite3
 from pathlib import Path
 
+from alembic.config import Config
+from sqlmodel import Session, create_engine, delete, select
+
+from alembic import command
+from models import Holding
+
 DB_PATH = Path(__file__).parent / "portfolio.db"
+engine = create_engine(f"sqlite:///{DB_PATH}")
 
 
 def init_db() -> None:
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS holdings (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                company_name  TEXT    NOT NULL DEFAULT '',
-                ticker        TEXT    NOT NULL,
-                shares_owned  REAL    NOT NULL DEFAULT 0,
-                avg_price     REAL    NOT NULL DEFAULT 0,
-                fees          REAL    NOT NULL DEFAULT 0
-            )
-        """)
+    alembic_cfg = Config(Path(__file__).parent / "alembic.ini")
+    command.upgrade(alembic_cfg, "head")
 
 
-def get_holdings() -> list[dict]:
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("SELECT * FROM holdings ORDER BY id").fetchall()
-        return [dict(row) for row in rows]
+def get_holdings() -> list[Holding]:
+    with Session(engine) as session:
+        return list(session.exec(select(Holding).order_by("id")).all())
 
 
-def save_holdings(rows: list[dict]) -> None:
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DELETE FROM holdings")
-        conn.executemany(
-            "INSERT INTO holdings (company_name, ticker, shares_owned, avg_price, fees) "
-            "VALUES (:company_name, :ticker, :shares_owned, :avg_price, :fees)",
-            rows,
-        )
+def save_holdings(rows: list[Holding]) -> None:
+    with Session(engine) as session:
+        session.exec(delete(Holding))
+        for h in rows:
+            h.id = None
+            session.add(h)
+        session.commit()
