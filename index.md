@@ -11,7 +11,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | What data is stored and how? | [docs/data-model.md](docs/data-model.md) |
 | What do each of the columns mean? | [docs/column-reference.md](docs/column-reference.md) |
 | How do I use the UI? | [docs/user-guide.md](docs/user-guide.md) |
-| Why was X built this way? | [ADR/](ADR/index.md) |
+| Why was X built this way? | [docs/adr/](docs/adr/) |
 | What's being built next? | [ROADMAP.md](ROADMAP.md) |
 
 ---
@@ -42,25 +42,13 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`docs/column-reference.md`](docs/column-reference.md) | All 9 display columns: definition, source, editability |
 | [`docs/user-guide.md`](docs/user-guide.md) | Step-by-step UI usage, known limitations |
 
-### `ADR/` — Architectural Decision Records
+### `docs/adr/` — Architectural Decision Records
 
 | File | Decision |
 |------|----------|
-| [`ADR/index.md`](ADR/index.md) | Index of all ADRs with status and one-line summary |
-| [`ADR/001-frontend-framework.md`](ADR/001-frontend-framework.md) | Streamlit over React+FastAPI or CLI |
-| [`ADR/002-data-storage.md`](ADR/002-data-storage.md) | SQLite over CSV/JSON or in-memory |
-| [`ADR/003-price-data-source.md`](ADR/003-price-data-source.md) | yfinance over Finnhub or Twelve Data |
-| [`ADR/004-auto-refresh-strategy.md`](ADR/004-auto-refresh-strategy.md) | `streamlit-autorefresh` over `time.sleep` or manual button |
-| [`ADR/005-save-strategy.md`](ADR/005-save-strategy.md) | Explicit save button over auto-save on edit |
-
----
-
-## Key concepts for AI agents
-
-- **Stored fields**: `company_name`, `ticker`, `shares_owned`, `avg_price`, `fees` — persisted in `portfolio.db` via the `Holding` SQLModel class in `models.py`.
-- **Calculated fields**: `current_price`, `total_cost`, `market_value`, `unrealized_pl` — derived at render time in `app.py`, never stored.
-- **Data model**: `get_holdings()` returns `list[Holding]`; `app.py` calls `h.model_dump()` to build the DataFrame and constructs `Holding(...)` objects in the save block.
-- **Save flow**: `app.py` reads `edited_df` from `st.data_editor`, strips empty-ticker rows, builds `list[Holding]`, and calls `db.save_holdings()` which does a full DELETE + re-INSERT in a single SQLModel session (no partial updates; row IDs are not stable across saves).
-- **Schema migrations**: managed by Alembic. `init_db()` calls `alembic upgrade head` on every startup (no-op if already at head). To add columns, run `alembic revision --autogenerate -m "..."` then `alembic upgrade head`.
-- **Price cache**: `_fetch_prices` is decorated with `@st.cache_data(ttl=30)`. Cache is explicitly cleared on save to force a fresh fetch for any newly added tickers.
-- **Auto-refresh**: `st_autorefresh(interval=30_000)` triggers a browser-side JS rerun every 30 seconds. This re-executes the entire Streamlit script, pulling fresh DB data and re-fetching prices (subject to the 30s cache TTL).
+| [`docs/adr/001-frontend-framework.md`](docs/adr/001-frontend-framework.md) | Streamlit over React+FastAPI or CLI |
+| [`docs/adr/002-data-storage.md`](docs/adr/002-data-storage.md) | SQLite over CSV/JSON or in-memory |
+| [`docs/adr/003-price-data-source.md`](docs/adr/003-price-data-source.md) | yfinance over Finnhub or Twelve Data |
+| [`docs/adr/004-auto-refresh-strategy.md`](docs/adr/004-auto-refresh-strategy.md) | `streamlit-autorefresh` over `time.sleep` or manual button |
+| [`docs/adr/005-save-strategy.md`](docs/adr/005-save-strategy.md) | Explicit save button over auto-save on edit |
+| [`docs/adr/006-orm.md`](docs/adr/006-orm.md) | SQLModel + Alembic over raw sqlite3 |
