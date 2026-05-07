@@ -41,8 +41,12 @@ folio/
 ├── portfolio.db     # SQLite database (created on first run, git-ignored)
 ├── README.md        # this file
 ├── index.md         # navigation index for all docs
-├── ADR/             # architectural decision records
 └── docs/            # design and reference documentation
+    ├── architecture.md
+    ├── data-model.md
+    ├── column-reference.md
+    ├── user-guide.md
+    └── adr/         # architectural decision records
 ```
 
 ## Usage
