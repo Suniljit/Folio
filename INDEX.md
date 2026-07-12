@@ -47,7 +47,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 |------|----------|
 | [`frontend/src/App.tsx`](frontend/src/App.tsx) | Layout, 30s polling, dirty-state tracking, save orchestration |
 | [`frontend/src/api.ts`](frontend/src/api.ts) | `getHoldings`, `saveHoldings` fetch wrappers |
-| [`frontend/src/components/`](frontend/src/components/) | `StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `SaveButton`, `Toast` |
+| [`frontend/src/components/`](frontend/src/components/) | `StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`, `Toast` |
 | [`frontend/src/styles/`](frontend/src/styles/) | CSS custom properties (design tokens) and component styling |
 | `frontend/src/*.test.ts(x)`, [`frontend/src/test/`](frontend/src/test/) | Vitest + React Testing Library tests and shared fixtures/setup |
 | [`frontend/vite.config.ts`](frontend/vite.config.ts) | Dev server + `/api` proxy to the backend; also configures the Vitest test environment |

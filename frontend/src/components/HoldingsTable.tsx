@@ -6,10 +6,10 @@ interface HoldingsTableProps {
   holdings: Holding[];
   onChange: (clientKey: string, field: keyof Holding, value: string) => void;
   onDelete: (clientKey: string) => void;
-  onAdd: () => void;
+  onAddOpen: () => void;
 }
 
-export function HoldingsTable({ holdings, onChange, onDelete, onAdd }: HoldingsTableProps) {
+export function HoldingsTable({ holdings, onChange, onDelete, onAddOpen }: HoldingsTableProps) {
   return (
     <div className="holdings-panel">
       <div className="holdings-header-row">
@@ -27,7 +27,7 @@ export function HoldingsTable({ holdings, onChange, onDelete, onAdd }: HoldingsT
       {holdings.map((h) => (
         <HoldingRow key={h.clientKey} holding={h} onChange={onChange} onDelete={onDelete} />
       ))}
-      <AddHoldingButton onAdd={onAdd} />
+      <AddHoldingButton onOpen={onAddOpen} />
     </div>
   );
 }
