@@ -1,6 +1,6 @@
 # Folio
 
-A personal portfolio tracker built with Streamlit and Python. Track holdings, view live prices, and monitor unrealized P&L in a single editable table.
+A personal portfolio tracker: a FastAPI JSON API backend with a React SPA frontend. Track holdings, view live prices, and monitor unrealized P&L in a single editable table.
 
 ## Features
 
@@ -13,45 +13,76 @@ A personal portfolio tracker built with Streamlit and Python. Track holdings, vi
 ## Prerequisites
 
 - Python 3.13+
-- [uv](https://docs.astral.sh/uv/) for dependency management
+- [uv](https://docs.astral.sh/uv/) for Python dependency management
+- Node.js + npm for the frontend
 
 ## Quickstart
 
 ```bash
-# Install dependencies
+# Install backend dependencies
 uv sync
 
+# Build the frontend (only needed once, or after frontend changes)
+cd frontend && npm install && npm run build && cd ..
+
 # Run the app
-uv run streamlit run app.py
+uv run uvicorn backend.main:app
 ```
 
-The app opens at `http://localhost:8501`.
+The app opens at `http://localhost:8000`.
+
+### Active frontend development
+
+Run two servers instead of building the frontend each time:
+
+```bash
+# Terminal 1 — backend, with auto-reload
+uv run uvicorn backend.main:app --reload --port 8000
+
+# Terminal 2 — frontend dev server (proxies /api to :8000)
+cd frontend && npm run dev
+```
+
+Open `http://localhost:5173`.
 
 ## Project layout
 
 ```
 folio/
-├── app.py           # Streamlit UI
-├── db.py            # SQLModel sessions: init_db, get_holdings, save_holdings
-├── models.py        # SQLModel table definitions (Holding, and future models)
-├── prices.py        # yfinance price fetching
-├── alembic.ini      # Alembic configuration
-├── alembic/         # database migration scripts
-├── pyproject.toml   # dependencies and tooling config
-├── portfolio.db     # SQLite database (created on first run, git-ignored)
-├── README.md        # this file
-├── index.md         # navigation index for all docs
-└── docs/            # design and reference documentation
+├── backend/
+│   ├── main.py       # FastAPI app: routes, CORS, static frontend mount
+│   ├── api/
+│   │   └── holdings.py   # GET/POST /api/holdings
+│   ├── schemas.py    # Pydantic request/response models
+│   ├── db.py         # SQLModel sessions: init_db, get_holdings, save_holdings
+│   ├── models.py     # SQLModel table definitions (Holding, and future models)
+│   ├── prices.py     # yfinance price fetching
+│   ├── alembic.ini   # Alembic configuration
+│   └── alembic/      # database migration scripts
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx           # layout, polling, dirty-state orchestration
+│   │   ├── api.ts            # fetch wrappers
+│   │   ├── format.ts         # currency formatting
+│   │   ├── components/       # StatCards, HoldingsTable, HoldingRow, etc.
+│   │   └── styles/           # CSS custom properties + component styles
+│   └── vite.config.ts        # dev proxy: /api -> :8000
+├── tests/            # pytest suite for the API
+├── pyproject.toml    # backend dependencies and tooling config
+├── portfolio.db      # SQLite database (created on first run, git-ignored)
+├── README.md         # this file
+├── index.md          # navigation index for all docs
+└── docs/             # design and reference documentation
     ├── architecture.md
     ├── data-model.md
     ├── column-reference.md
     ├── user-guide.md
-    └── adr/         # architectural decision records
+    └── adr/          # architectural decision records
 ```
 
 ## Usage
 
-1. Click **+ Add row** at the bottom of the table to add a holding.
+1. Click **+ Add holding** at the bottom of the table to add a holding.
 2. Fill in **Company**, **Ticker**, **Shares**, **Avg Price**, and **Fees**.
 3. Click **Save Changes** to persist to the database.
 4. Prices refresh automatically every 30 seconds.
@@ -62,9 +93,11 @@ folio/
 
 | Tool | Command |
 |------|---------|
+| Backend tests | `uv run pytest` |
 | Lint | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
 | Type check | `uv run ty check` |
+| Frontend build | `npm run build` (in `frontend/`) |
 
 ## Further reading
 

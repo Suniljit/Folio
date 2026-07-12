@@ -2,7 +2,7 @@
 
 **App name:** Folio  
 **Currency:** USD throughout  
-**Stack:** Streamlit · SQLModel · SQLite · yfinance
+**Stack:** FastAPI · React/Vite · SQLModel · SQLite · yfinance
 
 ---
 
@@ -119,7 +119,7 @@ Thresholds are configurable from the Settings tab.
 
 - [x] SQLite DB with holdings table
 - [x] yfinance price fetching with 30s auto-refresh
-- [x] Streamlit editable table (company, ticker, shares, avg price, fees)
+- [x] Editable table (company, ticker, shares, avg price, fees) — originally Streamlit's `st.data_editor`, migrated to a React SPA + FastAPI API (see [ADR 007](docs/adr/007-frontend-framework-revisit.md))
 - [x] Summary metrics: Market Value, Total Cost, Unrealized P&L
 - [x] Save button with cache-clear on save
 - [x] Rename app to **Folio**
@@ -189,7 +189,7 @@ Thresholds are configurable from the Settings tab.
 | Rolling model | One continuous trade + rolls sub-table | Cumulative P&L across all legs; current leg always visible |
 | Close stock fields | Sell price + sell date + sell fees | Enough to calculate exact realized P&L |
 | Ticker editability | Locked after creation | Prevents accidental overwrite; delete + add for ticker changes |
-| Alerts | In-app only (highlight + banner) | No background process needed; Streamlit-native |
+| Alerts | In-app only (highlight + banner) | No background process needed; renders as part of the existing poll-driven UI |
 | Alert thresholds | User-configurable (Settings tab) | 7 DTE and 85% profit as defaults |
 | Watchlist fields | Same metadata as holdings | Full parity: sector, intrinsic value, remarks, target allocation |
 | Excel export | All 4 tables, separate sheets | Complete backup in one file |
