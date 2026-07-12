@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getHoldings, saveHoldings } from "./api";
+import { AddHoldingModal } from "./components/AddHoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
 import { SaveButton } from "./components/SaveButton";
 import { StatCards } from "./components/StatCards";
@@ -27,6 +28,7 @@ export default function App() {
     unrealized_pl: 0,
   });
   const [toast, setToast] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const draftRef = useRef(draftHoldings);
   const savedRef = useRef(savedHoldings);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -78,22 +80,21 @@ export default function App() {
     setDraftHoldings((rows) => rows.filter((row) => row.clientKey !== clientKey));
   };
 
-  const handleAdd = () => {
+  const handleAddSubmit = (
+    fields: Pick<Holding, "company_name" | "ticker" | "shares_owned" | "avg_price" | "fees">,
+  ) => {
     nextTempId.current -= 1;
     const row: Holding = {
       id: null,
       clientKey: `new-${nextTempId.current}`,
-      company_name: "New Holding",
-      ticker: "",
-      shares_owned: 0,
-      avg_price: 0,
-      fees: 0,
+      ...fields,
       current_price: 0,
       total_cost: 0,
       market_value: 0,
       unrealized_pl: 0,
     };
     setDraftHoldings((rows) => [...rows, row]);
+    setAddModalOpen(false);
   };
 
   const handleSave = () => {
@@ -118,12 +119,17 @@ export default function App() {
             holdings={draftHoldings}
             onChange={handleChange}
             onDelete={handleDelete}
-            onAdd={handleAdd}
+            onAddOpen={() => setAddModalOpen(true)}
           />
           <SaveButton onSave={handleSave} disabled={!dirty} />
           <Toast message={toast} />
         </div>
       </div>
+      <AddHoldingModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleAddSubmit}
+      />
     </div>
   );
 }

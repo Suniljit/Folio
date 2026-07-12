@@ -71,7 +71,10 @@ describe("App", () => {
     render(<App />);
 
     const saveButton = await screen.findByRole("button", { name: /save changes/i });
-    await user.click(screen.getByRole("button", { name: /add holding/i }));
+    await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
+    await user.type(screen.getByPlaceholderText("e.g. Apple"), "Microsoft");
+    await user.type(screen.getByPlaceholderText("AAPL"), "msft");
+    await user.click(screen.getByRole("button", { name: "Add Holding" }));
     expect(saveButton).toBeEnabled();
 
     const deleteButtons = screen.getAllByRole("button", { name: /delete holding/i });
