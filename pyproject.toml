@@ -3,22 +3,25 @@ name = "folio"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "streamlit>=1.35.0",
     "yfinance>=0.2.40",
-    "pandas>=2.2.0",
     "loguru>=0.7.0",
-    "streamlit-autorefresh>=1.0.1",
     "sqlmodel>=0.0.38",
     "alembic>=1.18.4",
+    "fastapi>=0.139.0",
+    "uvicorn[standard]>=0.46.0",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest>=9.0.2",
     "ruff>=0.15.7",
     "taskipy>=1.14.1",
     "ty>=0.0.34",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
@@ -29,3 +32,5 @@ select = ["E", "F", "I"]
 [tool.taskipy.tasks]
 format = "ruff check --fix && ruff format ."
 typecheck = "uv run ty check ."
+run = "uvicorn backend.main:app"
+dev-api = "uvicorn backend.main:app --reload --port 8000"
