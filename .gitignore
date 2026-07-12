@@ -4,9 +4,14 @@ portfolio.db
 # Ignore Python bytecode files
 __pycache__/
 
+# Ignore Python virtual environment and tool caches
+.venv/
+.ruff_cache/
+
 # Ignore macOS system files
 .DS_Store
 
 # Frontend build artifacts and dependencies
 frontend/node_modules/
 frontend/dist/
+frontend/coverage/
