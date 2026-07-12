@@ -1,6 +1,6 @@
 # ADR 001 — Frontend Framework
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 007](007-frontend-framework-revisit.md)
 
 ## Context
 
