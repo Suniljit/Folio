@@ -23,8 +23,7 @@
 body {
   margin: 0;
   background: var(--color-bg);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
   color: var(--color-text);
 }
 

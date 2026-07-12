@@ -10,9 +10,13 @@ uv run uvicorn backend.main:app --reload --port 8000  # backend dev server (with
 npm --prefix frontend run dev                          # frontend dev server (http://localhost:5173, proxies /api to :8000)
 npm --prefix frontend run build                         # build frontend into frontend/dist (required for the single-command run above)
 uv run pytest                                          # backend API tests
-uv run ruff check .                                    # lint
-uv run ruff format .                                   # format
-uv run ty check                                        # type check
+uv run ruff check .                                    # backend lint
+uv run ruff format .                                   # backend format
+uv run ty check                                        # backend type check
+npm --prefix frontend run test                         # frontend tests (vitest)
+npm --prefix frontend run lint                          # frontend lint (oxlint)
+npm --prefix frontend run format                         # frontend format (prettier --write)
+npm --prefix frontend run format:check                    # frontend format check (prettier --check)
 ```
 
 ## Architecture
