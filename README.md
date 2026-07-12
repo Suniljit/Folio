@@ -71,7 +71,7 @@ folio/
 ├── pyproject.toml    # backend dependencies and tooling config
 ├── portfolio.db      # SQLite database (created on first run, git-ignored)
 ├── README.md         # this file
-├── index.md          # navigation index for all docs
+├── INDEX.md          # navigation index for all docs
 └── docs/             # design and reference documentation
     ├── architecture.md
     ├── data-model.md
@@ -91,14 +91,24 @@ folio/
 
 ## Tooling
 
+Backend (run from repo root):
+
 | Tool | Command |
 |------|---------|
-| Backend tests | `uv run pytest` |
+| Tests | `uv run pytest` |
 | Lint | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
 | Type check | `uv run ty check` |
-| Frontend build | `npm run build` (in `frontend/`) |
+
+Frontend (run from `frontend/`):
+
+| Tool | Command |
+|------|---------|
+| Tests | `npm run test` |
+| Lint | `npm run lint` |
+| Format | `npm run format` (check only: `npm run format:check`) |
+| Type check | `npm run build` (runs `tsc -b` before bundling) |
 
 ## Further reading
 
-See [`index.md`](index.md) for a full map of all documentation.
+See [`INDEX.md`](INDEX.md) for a full map of all documentation.
