@@ -15,9 +15,10 @@ For active frontend development, run two servers instead: `uv run uvicorn backen
 ## Adding a holding
 
 1. Scroll to the bottom of the table.
-2. Click the **+ Add holding** button below the last row.
-3. Fill in the editable columns: **Company**, **Ticker**, **Shares**, **Avg Price**, **Fees**.
-4. Click **Save Changes**.
+2. Click the **+ Add holding** button below the last row — this opens the **Add Holding** dialog.
+3. Fill in **Company**, **Ticker**, **Shares**, **Avg Price**, and **Fees**. Company and Ticker are required; the dialog shows an inline error if either is left blank.
+4. Click **Add Holding** in the dialog to add the row to the table (or **Cancel** / click outside the dialog to discard it).
+5. Click **Save Changes** to persist the new row.
 
 The calculated columns (**Current Price**, **Total Cost**, **Market Value**, **Unrealized P/L**) will populate after saving with fresh prices from the server.
 

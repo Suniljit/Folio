@@ -32,11 +32,12 @@ The React frontend (`frontend/`) holds its own edit state and polls the API ever
 
 ### `frontend/` — UI layer
 
-A Vite + React + TypeScript SPA. `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `SaveButton`, `Toast`) render the design.
+A Vite + React + TypeScript SPA. `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`, `Toast`) render the design.
 
 Responsibilities:
 - Fetches `GET /api/holdings` on mount and every 30 seconds
 - Holds two copies of the holdings list: `savedHoldings` (last server response) and `draftHoldings` (the editable working copy); edits, adds, and deletes only ever mutate the draft
+- Adding a holding is a two-step client-side flow: `AddHoldingButton` opens `AddHoldingModal`, which collects and validates the new row's fields, then appends it to `draftHoldings` on submit — no dedicated backend call, it rides along with the next Save
 - On each 30-second poll, if the draft differs from the last saved state, discards the draft in favor of the fresh response and shows a toast; otherwise silently refreshes displayed prices
 - On **Save Changes**, posts `draftHoldings` to `POST /api/holdings` and replaces both state copies with the response
 
