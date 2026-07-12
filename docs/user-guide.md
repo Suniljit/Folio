@@ -3,28 +3,30 @@
 ## Starting the app
 
 ```bash
-uv run streamlit run app.py
+uv run uvicorn backend.main:app
 ```
 
-Opens at `http://localhost:8501`.
+Opens at `http://localhost:8000`. This serves both the API and the built frontend — you need to have run `npm run build` in `frontend/` at least once (see [README.md](../README.md) for the full setup).
+
+For active frontend development, run two servers instead: `uv run uvicorn backend.main:app --reload --port 8000` and, in a second terminal, `npm run dev` inside `frontend/` (opens at `http://localhost:5173`, proxying API calls to the backend).
 
 ---
 
 ## Adding a holding
 
 1. Scroll to the bottom of the table.
-2. Click the **+ Add row** button that appears below the last row.
+2. Click the **+ Add holding** button below the last row.
 3. Fill in the editable columns: **Company**, **Ticker**, **Shares**, **Avg Price**, **Fees**.
 4. Click **Save Changes**.
 
-The calculated columns (**Current Price**, **Total Cost**, **Market Value**, **Unrealized P/L**) will populate after saving and the page reruns with fresh prices.
+The calculated columns (**Current Price**, **Total Cost**, **Market Value**, **Unrealized P/L**) will populate after saving with fresh prices from the server.
 
 ---
 
 ## Editing a holding
 
-1. Click any cell in the editable columns (Company, Ticker, Shares, Avg Price, Fees).
-2. Type the new value and press **Enter** or click away to confirm.
+1. Click any cell in the editable columns (Company, Ticker, Shares, Avg Price, Fees) — it becomes a plain text input.
+2. Type the new value and click elsewhere to confirm.
 3. Click **Save Changes** to persist the edit to the database.
 
 Calculated columns are read-only and cannot be edited.
@@ -33,15 +35,14 @@ Calculated columns are read-only and cannot be edited.
 
 ## Deleting a holding
 
-1. Hover over the row you want to remove.
-2. Click the **trash icon** that appears on the left side of the row.
-3. Click **Save Changes** to commit the deletion.
+1. Click the **×** button at the right of the row you want to remove.
+2. Click **Save Changes** to commit the deletion.
 
 ---
 
 ## Understanding the summary cards
 
-Three metric cards appear above the table:
+Three stat cards appear above the table:
 
 | Card | Meaning |
 |------|---------|
@@ -53,19 +54,19 @@ Three metric cards appear above the table:
 
 ## Price refresh
 
-Prices update automatically every **30 seconds**. A countdown is not shown, but the `st_autorefresh` component runs silently in the background.
+Prices update automatically every **30 seconds**. A small toast notification appears bottom-right of the dashboard on each save, and also whenever an auto-refresh discards unsaved edits (see below).
 
-You can also trigger an immediate price update by clicking **Save Changes** — the save flow clears the price cache and forces a fresh fetch on the subsequent rerun.
+You can also trigger an immediate price update by clicking **Save Changes** — the save endpoint clears the server-side price cache and returns fresh prices in its response.
 
 ---
 
 ## Known limitations
 
 **Unsaved edits are cleared on auto-refresh.**
-If you are mid-edit when the 30-second refresh fires, any changes not yet saved will be lost. Save frequently, especially during active editing.
+If you are mid-edit when the 30-second refresh fires, any changes not yet saved will be lost — a toast reading *"Refreshed — unsaved edits cleared"* confirms this happened. Save frequently, especially during active editing.
 
 **Prices show $0.00 for invalid tickers.**
-If a ticker is misspelled or not found on Yahoo Finance, `current_price` displays `$0.00` and a warning is logged to the terminal. Market Value and P/L for that row will also be `$0.00`.
+If a ticker is misspelled or not found on Yahoo Finance, `current_price` displays `$0.00` and a warning is logged server-side. Market Value and P/L for that row will also be `$0.00`.
 
 **Outside market hours.**
 `current_price` reflects the last traded price, which is the prior session's close when the market is closed. The value is real — just not intraday.

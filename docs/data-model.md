@@ -4,7 +4,7 @@
 
 File: `portfolio.db` (created at the project root on first run via `alembic upgrade head`).
 
-The schema is declared in `models.py` as a SQLModel class:
+The schema is declared in `backend/models.py` as a SQLModel class:
 
 ```python
 class Holding(SQLModel, table=True):
@@ -20,11 +20,11 @@ class Holding(SQLModel, table=True):
 
 Schema changes are managed by Alembic. Add a migration with:
 ```bash
-alembic revision --autogenerate -m "description"
+cd backend && alembic revision --autogenerate -m "description"
 alembic upgrade head
 ```
 
-Only the five user-supplied fields are persisted. All other columns shown in the UI are computed at render time.
+Only the five user-supplied fields are persisted. All other columns shown in the UI are computed server-side in `backend/api/holdings.py` and returned in the `GET`/`POST /api/holdings` response — the frontend only formats and displays them.
 
 ## Stored vs. calculated columns
 

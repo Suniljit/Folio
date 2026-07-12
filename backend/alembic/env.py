@@ -1,9 +1,9 @@
 from logging.config import fileConfig
 
+from alembic import context
 from sqlmodel import SQLModel
 
-import models  # noqa: F401 — registers all models with SQLModel.metadata
-from alembic import context
+from backend import models  # noqa: F401 — registers all models with SQLModel.metadata
 
 config = context.config
 
@@ -26,7 +26,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    from db import engine
+    from backend.db import engine
 
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

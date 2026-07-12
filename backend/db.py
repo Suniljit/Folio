@@ -1,12 +1,12 @@
 from pathlib import Path
 
+from alembic import command
 from alembic.config import Config
 from sqlmodel import Session, create_engine, delete, select
 
-from alembic import command
-from models import Holding
+from backend.models import Holding
 
-DB_PATH = Path(__file__).parent / "portfolio.db"
+DB_PATH = Path(__file__).parent.parent / "portfolio.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
 
 

@@ -2,43 +2,58 @@
 
 ## Overview
 
-Folio is a single-user, locally-hosted web app. There is no server-side backend beyond what Streamlit provides — the Python script IS the server. Data lives in a local SQLite file; prices are fetched on-demand from Yahoo Finance via yfinance.
+Folio is a single-user, locally-hosted web app: a React single-page frontend talking to a FastAPI JSON API backend. Data lives in a local SQLite file; prices are fetched on-demand from Yahoo Finance via yfinance.
 
 ```
-Browser (localhost:8501)
+Browser (localhost:8000, or :5173 in dev)
         │
-        │  WebSocket (Streamlit protocol)
+        │  HTTP (fetch)
         ▼
 ┌───────────────────────────────────────┐
-│              app.py                   │
-│  ┌─────────────┐   ┌───────────────┐  │
-│  │   db.py     │   │  prices.py    │  │
-│  │  (SQLite)   │   │  (yfinance)   │  │
-│  └──────┬──────┘   └──────┬────────┘  │
-│         │                 │           │
-└─────────┼─────────────────┼───────────┘
-          │                 │
-    portfolio.db      api.finance.yahoo.com
-    (local file)      (HTTP, ~30s cached)
+│         backend/main.py (FastAPI)      │
+│  ┌───────────────┐                     │
+│  │ api/holdings.py│                    │
+│  └───────┬────────┘                    │
+│          │                             │
+│  ┌───────┴──────┐   ┌───────────────┐  │
+│  │  db.py       │   │  prices.py    │  │
+│  │  (SQLite)    │   │  (yfinance)   │  │
+│  └──────┬───────┘   └──────┬────────┘  │
+│         │                  │           │
+└─────────┼──────────────────┼───────────┘
+          │                  │
+    portfolio.db       api.finance.yahoo.com
+    (local file)       (HTTP, ~30s cached)
 ```
+
+The React frontend (`frontend/`) holds its own edit state and polls the API every 30 seconds; it never talks to SQLite or yfinance directly.
 
 ## Components
 
-### `app.py` — UI layer
+### `frontend/` — UI layer
 
-The Streamlit entry point. Runs top-to-bottom on every page render (initial load, auto-refresh, user interaction, explicit save).
+A Vite + React + TypeScript SPA. `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `SaveButton`, `Toast`) render the design.
 
 Responsibilities:
-- Calls `init_db()` to ensure the schema exists
-- Loads holdings from SQLite via `get_holdings()`
-- Fetches current prices via the cached `_fetch_prices()` wrapper
-- Derives calculated columns in a pandas DataFrame
-- Renders summary metric cards and the editable `st.data_editor` table
-- On save: validates, writes to SQLite, clears price cache, reruns
+- Fetches `GET /api/holdings` on mount and every 30 seconds
+- Holds two copies of the holdings list: `savedHoldings` (last server response) and `draftHoldings` (the editable working copy); edits, adds, and deletes only ever mutate the draft
+- On each 30-second poll, if the draft differs from the last saved state, discards the draft in favor of the fresh response and shows a toast; otherwise silently refreshes displayed prices
+- On **Save Changes**, posts `draftHoldings` to `POST /api/holdings` and replaces both state copies with the response
 
-### `db.py` — Persistence layer
+### `backend/main.py` — FastAPI app
 
-SQLModel ORM over SQLite. Schema is version-controlled via Alembic.
+Registers the holdings API router, configures CORS for the Vite dev server, runs `init_db()` on startup, and — when `frontend/dist/` exists (i.e. after `npm run build`) — mounts it as static files so the whole app is served from one process/port.
+
+### `backend/api/holdings.py` — API layer
+
+- `GET /api/holdings` — returns all holdings with stored fields plus computed fields (`current_price`, `total_cost`, `market_value`, `unrealized_pl`), plus portfolio `totals`. Prices are cached in-process for 30 seconds per ticker set.
+- `POST /api/holdings` — full replace: drops rows with an empty ticker, calls `save_holdings()`, clears the price cache, and returns the same shape as GET so the frontend can render from the response without a second round trip.
+
+Computed columns are derived here, once, in Python — the frontend only formats and displays them.
+
+### `backend/db.py` — Persistence layer
+
+SQLModel ORM over SQLite. Schema is version-controlled via Alembic (`backend/alembic/`).
 
 - `init_db()` — runs `alembic upgrade head` on startup; applies any pending migrations
 - `get_holdings()` — typed query returning `list[Holding]`, ordered by `id`
@@ -46,52 +61,50 @@ SQLModel ORM over SQLite. Schema is version-controlled via Alembic.
 
 The full-replace pattern is intentional: the portfolio is small, there are no foreign key relationships yet, and it avoids the complexity of diffing inserts/updates/deletes.
 
-### `models.py` — Data models
+### `backend/models.py` — Data models
 
 SQLModel class definitions. `Holding` is the single model today; future tables (options, watchlist, etc.) will be added here.
 
-Each class declared with `table=True` maps directly to a SQLite table and doubles as a typed Python dataclass.
-
-### `prices.py` — Price fetching
+### `backend/prices.py` — Price fetching
 
 `fetch_prices(tickers)` iterates over tickers and calls `yf.Ticker(t).fast_info.last_price` for each. Failures are caught per-ticker, logged via loguru, and fall back to `0.0` so one bad ticker doesn't block the rest.
 
-Price fetching is wrapped in `app.py` with `@st.cache_data(ttl=30)`, so Yahoo Finance is hit at most once per 30-second window regardless of how many reruns occur.
+The API layer caches price lookups per ticker set for 30 seconds, so Yahoo Finance is hit at most once per 30-second window regardless of how many requests arrive.
 
 ## Data flow
 
-### On page load / auto-refresh
+### On page load / 30-second poll
 
 ```
-st_autorefresh fires (every 30s)
-  → Streamlit reruns app.py
-  → init_db()          (alembic upgrade head — no-op if already at head)
-  → get_holdings()     (returns list[Holding] from portfolio.db)
-  → _fetch_prices()    (cached; hits Yahoo Finance if TTL expired)
-  → build DataFrame    (stored fields + calculated fields)
-  → render metrics + st.data_editor
+Frontend timer fires (every 30s, and once on mount)
+  → GET /api/holdings
+  → backend: get_holdings()       (SQLModel query)
+  → backend: cached price lookup  (hits Yahoo Finance if TTL expired)
+  → backend: compute total_cost / market_value / unrealized_pl per row + totals
+  → frontend: compare response against current draft
+      → if draft differs from last-saved state: discard draft, show "Refreshed — unsaved edits cleared" toast
+      → else: silently update displayed prices/computed columns
 ```
 
 ### On Save
 
 ```
 User clicks "Save Changes"
-  → app.py reads edited_df from st.data_editor
-  → filters rows with empty ticker
-  → save_holdings(rows)   → DELETE + INSERT list[Holding] in portfolio.db
-  → _fetch_prices.clear() → invalidate price cache
-  → st.rerun()            → triggers immediate page reload
+  → frontend posts draftHoldings to POST /api/holdings
+  → backend: drops rows with empty ticker
+  → backend: save_holdings(rows)   → DELETE + INSERT list[Holding] in portfolio.db
+  → backend: clears price cache
+  → backend: returns fresh GET-shaped response
+  → frontend: replaces savedHoldings/draftHoldings/totals from the response, shows "Saved!" toast
 ```
 
 ## Auto-refresh mechanism
 
-`streamlit-autorefresh` injects a small JavaScript component that calls `window.setTimeout` in the browser. After 30 000 ms it posts a message that triggers a Streamlit rerun. This keeps the server-side thread free during the interval — unlike `time.sleep()`, which would block the script thread and make the UI unresponsive to interactions during the wait.
-
-The 30-second JS interval and the 30-second `@st.cache_data(ttl=30)` are aligned: each auto-refresh rerun hits the cache boundary and fetches fresh prices.
+The frontend uses a plain `setInterval` (30,000 ms) that calls `GET /api/holdings`. This replaces `streamlit-autorefresh`'s JS-triggered rerun — see [ADR 007](adr/007-frontend-framework-revisit.md) — but preserves the same contract: the 30-second interval and "unsaved edits are cleared on refresh" behavior are unchanged from the original design (see [ADR 004](adr/004-auto-refresh-strategy.md) and [ADR 005](adr/005-save-strategy.md)).
 
 ## Known constraints
 
 - **Single user**: SQLite has no concurrency protection. Running multiple browser sessions simultaneously can produce inconsistent state.
-- **Unsaved edits lost on refresh**: `st.data_editor` re-initializes from fresh DB data on every rerun. Any edits not yet saved will be cleared by the 30-second auto-refresh.
+- **Unsaved edits lost on refresh**: the frontend's `draftHoldings` state is discarded and replaced with server truth whenever a 30-second poll finds it out of sync with `savedHoldings`.
 - **Market hours only**: yfinance `fast_info.last_price` returns the last traded price. Outside market hours this is the prior session's close, not a real-time quote.
 - **US tickers assumed**: All values are USD. No FX conversion.
