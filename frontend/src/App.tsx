@@ -85,8 +85,13 @@ export default function App() {
       market_value: 0,
       unrealized_pl: 0,
     };
-    setDraftHoldings((rows) => [...rows, row]);
+    const updated = [...draftHoldings, row];
+    setDraftHoldings(updated);
     setAddModalOpen(false);
+    saveHoldings(updated).then((response) => {
+      applyResponse(response);
+      toast("Holding added!");
+    });
   };
 
   const handleSave = () => {
