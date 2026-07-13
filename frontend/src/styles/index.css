@@ -1,3 +1,7 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
 :root {
   --color-bg: oklch(0.15 0.004 90);
   --color-gold: oklch(0.76 0.09 85);
@@ -14,10 +18,27 @@
   --row-separator: oklch(1 0 0 / 0.04);
   --color-text: oklch(0.9 0.006 90);
   --color-text-dim: oklch(0.7 0.006 90);
-}
 
-* {
-  box-sizing: border-box;
+  /* shadcn theme tokens, mapped onto the Folio palette above (single fixed dark theme, no light/dark toggle) */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-card-bg);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-card-bg);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-gold);
+  --primary-foreground: var(--color-bg);
+  --secondary: var(--color-table-bg);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-table-bg);
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-table-bg);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-negative);
+  --border: var(--color-card-border);
+  --input: var(--color-table-border);
+  --ring: var(--color-gold-border);
+  --radius: 0.625rem;
 }
 
 body {
@@ -41,22 +62,36 @@ input[type="number"] {
   background: oklch(0.76 0.09 85 / 0.35);
 }
 
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+@theme inline {
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@keyframes backdropIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
 }

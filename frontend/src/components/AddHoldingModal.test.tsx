@@ -64,15 +64,21 @@ describe("AddHoldingModal", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("closes when the backdrop is clicked but not when the dialog itself is clicked", async () => {
+  it("does not close when the dialog itself is clicked", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<AddHoldingModal open onClose={onClose} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByRole("dialog"));
     expect(onClose).not.toHaveBeenCalled();
+  });
 
-    await user.click(screen.getByRole("presentation"));
+  it("closes when Escape is pressed", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<AddHoldingModal open onClose={onClose} onSubmit={vi.fn()} />);
+
+    await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

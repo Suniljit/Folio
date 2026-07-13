@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import type { Holding } from "../types";
 
 const emptyForm = { company_name: "", ticker: "", shares_owned: "", avg_price: "", fees: "" };
@@ -14,8 +16,6 @@ interface AddHoldingModalProps {
 export function AddHoldingModal({ open, onClose, onSubmit }: AddHoldingModalProps) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
-
-  if (!open) return null;
 
   const setField = (field: keyof typeof emptyForm, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -47,25 +47,16 @@ export function AddHoldingModal({ open, onClose, onSubmit }: AddHoldingModalProp
   };
 
   return (
-    <div className="modal-backdrop" onClick={handleClose} role="presentation">
-      <div
-        className="modal-dialog"
-        role="dialog"
-        aria-modal="true"
+    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
+      <DialogContent
         aria-label="Add Holding"
-        onClick={(e) => e.stopPropagation()}
+        className="max-w-[460px] gap-[22px] rounded-[24px] border-[oklch(0.76_0.09_85_/_0.5)] bg-[oklch(0.21_0.008_90)] px-8 pt-[30px] pb-7 shadow-[0_40px_90px_-20px_rgba(0,0,0,0.85),0_0_0_1px_oklch(0.76_0.09_85_/_0.12),0_0_60px_-10px_oklch(0.76_0.09_85_/_0.15)]"
       >
-        <div className="modal-header">
-          <h2 className="modal-title">Add Holding</h2>
-          <button
-            type="button"
-            className="modal-close-button"
-            aria-label="Close"
-            onClick={handleClose}
-          >
-            ×
-          </button>
-        </div>
+        <DialogHeader>
+          <DialogTitle className="text-[20px] font-[650] tracking-[-0.01em] text-[var(--color-heading)]">
+            Add Holding
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="modal-fields">
           <div className="modal-field">
@@ -127,15 +118,15 @@ export function AddHoldingModal({ open, onClose, onSubmit }: AddHoldingModalProp
           {error && <div className="modal-error">{error}</div>}
         </div>
 
-        <div className="modal-actions">
-          <button type="button" className="modal-cancel-button" onClick={handleClose}>
+        <DialogFooter className="m-0 flex-row justify-end gap-[10px] rounded-none border-t-0 bg-transparent p-0">
+          <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
-          </button>
-          <button type="button" className="modal-submit-button" onClick={handleSubmit}>
+          </Button>
+          <Button type="button" variant="gold" onClick={handleSubmit}>
             Add Holding
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

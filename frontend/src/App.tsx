@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { getHoldings, saveHoldings } from "./api";
 import { AddHoldingModal } from "./components/AddHoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
 import { SaveButton } from "./components/SaveButton";
 import { StatCards } from "./components/StatCards";
-import { Toast } from "./components/Toast";
+import { Toaster } from "./components/ui/sonner";
 import type { Holding, HoldingsResponse, Totals } from "./types";
 
 const REFRESH_INTERVAL_MS = 30_000;
-const TOAST_DURATION_MS = 2200;
 
 function withClientKeys(response: HoldingsResponse): Holding[] {
   return response.holdings.map((h) => ({ ...h, clientKey: String(h.id) }));
@@ -27,21 +27,13 @@ export default function App() {
     total_cost: 0,
     unrealized_pl: 0,
   });
-  const [toast, setToast] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const draftRef = useRef(draftHoldings);
   const savedRef = useRef(savedHoldings);
-  const toastTimer = useRef<number | undefined>(undefined);
   const nextTempId = useRef(0);
 
   draftRef.current = draftHoldings;
   savedRef.current = savedHoldings;
-
-  const showToast = useCallback((message: string) => {
-    window.clearTimeout(toastTimer.current);
-    setToast(message);
-    toastTimer.current = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
-  }, []);
 
   const applyResponse = useCallback((response: HoldingsResponse) => {
     const withKeys = withClientKeys(response);
@@ -58,13 +50,13 @@ export default function App() {
         const dirty = isDirty(draftRef.current, savedRef.current);
         applyResponse(response);
         if (dirty) {
-          showToast("Refreshed — unsaved edits cleared");
+          toast("Refreshed — unsaved edits cleared");
         }
       });
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [applyResponse, showToast]);
+  }, [applyResponse]);
 
   const handleChange = (clientKey: string, field: keyof Holding, value: string) => {
     setDraftHoldings((rows) =>
@@ -100,7 +92,7 @@ export default function App() {
   const handleSave = () => {
     saveHoldings(draftHoldings).then((response) => {
       applyResponse(response);
-      showToast("Saved!");
+      toast("Saved!");
     });
   };
 
@@ -122,7 +114,6 @@ export default function App() {
             onAddOpen={() => setAddModalOpen(true)}
           />
           <SaveButton onSave={handleSave} disabled={!dirty} />
-          <Toast message={toast} />
         </div>
       </div>
       <AddHoldingModal
@@ -130,6 +121,7 @@ export default function App() {
         onClose={() => setAddModalOpen(false)}
         onSubmit={handleAddSubmit}
       />
+      <Toaster position="bottom-right" />
     </div>
   );
 }

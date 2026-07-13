@@ -47,8 +47,8 @@ Navigation guide for all documentation in this repository. Intended for both hum
 |------|----------|
 | [`frontend/src/App.tsx`](frontend/src/App.tsx) | Layout, 30s polling, dirty-state tracking, save orchestration |
 | [`frontend/src/api.ts`](frontend/src/api.ts) | `getHoldings`, `saveHoldings` fetch wrappers |
-| [`frontend/src/components/`](frontend/src/components/) | `StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`, `Toast` |
-| [`frontend/src/styles/`](frontend/src/styles/) | CSS custom properties (design tokens) and component styling |
+| [`frontend/src/components/`](frontend/src/components/) | `StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`; [`frontend/src/components/ui/`](frontend/src/components/ui/) holds shadcn/ui primitives (`Button`, `Card`, `Dialog`, `Table`, `Toaster`) |
+| [`frontend/src/styles/`](frontend/src/styles/) | CSS custom properties (design tokens, mapped onto shadcn's theme variables) and remaining panel/wrapper-level component styling |
 | `frontend/src/*.test.ts(x)`, [`frontend/src/test/`](frontend/src/test/) | Vitest + React Testing Library tests and shared fixtures/setup |
 | [`frontend/vite.config.ts`](frontend/vite.config.ts) | Dev server + `/api` proxy to the backend; also configures the Vitest test environment |
 | [`frontend/.prettierrc.json`](frontend/.prettierrc.json) | Prettier formatting rules |
@@ -72,4 +72,5 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`docs/adr/004-auto-refresh-strategy.md`](docs/adr/004-auto-refresh-strategy.md) | `streamlit-autorefresh` over `time.sleep` or manual button (original Streamlit mechanism; see ADR 007 for the SPA replacement) |
 | [`docs/adr/005-save-strategy.md`](docs/adr/005-save-strategy.md) | Explicit save button over auto-save on edit |
 | [`docs/adr/006-orm.md`](docs/adr/006-orm.md) | SQLModel + Alembic over raw sqlite3 |
-| [`docs/adr/007-frontend-framework-revisit.md`](docs/adr/007-frontend-framework-revisit.md) | FastAPI + React/Vite over Streamlit, for pixel-accurate design fidelity |
+| [`docs/adr/007-frontend-framework-revisit.md`](docs/adr/007-frontend-framework-revisit.md) | FastAPI + React/Vite over Streamlit, for pixel-accurate design fidelity — **styling clause superseded by ADR 008** |
+| [`docs/adr/008-adopt-shadcn-tailwind.md`](docs/adr/008-adopt-shadcn-tailwind.md) | Tailwind CSS + shadcn/ui over hand-rolled CSS components |
