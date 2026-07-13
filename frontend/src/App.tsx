@@ -30,10 +30,12 @@ export default function App() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const draftRef = useRef(draftHoldings);
   const savedRef = useRef(savedHoldings);
+  const addModalOpenRef = useRef(addModalOpen);
   const nextTempId = useRef(0);
 
   draftRef.current = draftHoldings;
   savedRef.current = savedHoldings;
+  addModalOpenRef.current = addModalOpen;
 
   const applyResponse = useCallback((response: HoldingsResponse) => {
     const withKeys = withClientKeys(response);
@@ -46,6 +48,7 @@ export default function App() {
     getHoldings().then(applyResponse);
 
     const interval = window.setInterval(() => {
+      if (addModalOpenRef.current) return;
       getHoldings().then((response) => {
         const dirty = isDirty(draftRef.current, savedRef.current);
         applyResponse(response);
