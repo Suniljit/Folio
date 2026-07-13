@@ -32,7 +32,7 @@ The React frontend (`frontend/`) holds its own edit state and polls the API ever
 
 ### `frontend/` — UI layer
 
-A Vite + React + TypeScript SPA. `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`, `Toast`) render the design.
+A Vite + React + TypeScript SPA, styled with Tailwind CSS and shadcn/ui (see [ADR 008](adr/008-adopt-shadcn-tailwind.md)). `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`) render the design on top of shadcn primitives (`frontend/src/components/ui/`), and toasts are shown via `sonner`.
 
 Responsibilities:
 - Fetches `GET /api/holdings` on mount and every 30 seconds
