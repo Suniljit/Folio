@@ -32,7 +32,7 @@ The React frontend (`frontend/`) holds its own edit state and polls the API ever
 
 ### `frontend/` — UI layer
 
-A Vite + React + TypeScript SPA, styled with Tailwind CSS and shadcn/ui (see [ADR 008](adr/008-adopt-shadcn-tailwind.md)). `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`) render the design on top of shadcn primitives (`frontend/src/components/ui/`), and toasts are shown via `sonner`.
+A Vite + React + TypeScript SPA, styled with Tailwind CSS and shadcn/ui (see [ADR 008](adr/008-adopt-shadcn-tailwind.md)). `App.tsx` orchestrates data fetching, polling, and dirty-state tracking; presentational components (`StatCards`, `HoldingsTable`, `HoldingRow`, `AddHoldingButton`, `AddHoldingModal`, `SaveButton`, `OptionTradesTable`, `OptionTradeRow`, `OptionTradeModal`, `AddOptionTradeButton`) render the design on top of shadcn primitives (`frontend/src/components/ui/`), and toasts are shown via `sonner`.
 
 Responsibilities:
 - Fetches `GET /api/holdings` on mount and every 30 seconds
@@ -52,6 +52,13 @@ Registers the holdings API router, configures CORS for the Vite dev server, runs
 
 Computed columns are derived here, once, in Python — the frontend only formats and displays them.
 
+### `backend/api/options_trades.py` — API layer
+
+- `GET /api/options-trades` — returns all option trades with stored fields plus computed fields (`entry_value`, `remaining_dte`). No external data source or cache is involved — both are pure arithmetic on stored fields.
+- `POST /api/options-trades` — full replace: drops rows with an empty ticker, calls `save_option_trades()`, and returns the same shape as GET.
+
+There is no live/mark-to-market pricing for open option positions yet (no options-chain data source exists in this codebase), so fields like P/L-open, rolls P/L, and ROI are intentionally out of scope for now — see [data-model.md](data-model.md#options-trades-schema).
+
 ### `backend/db.py` — Persistence layer
 
 SQLModel ORM over SQLite. Schema is version-controlled via Alembic (`backend/alembic/`).
@@ -64,7 +71,7 @@ The full-replace pattern is intentional: the portfolio is small, there are no fo
 
 ### `backend/models.py` — Data models
 
-SQLModel class definitions. `Holding` is the single model today; future tables (options, watchlist, etc.) will be added here.
+SQLModel class definitions: `Holding` and `OptionTrade`. Future tables (watchlist, etc.) will be added here following the same plain-fields, full-replace-on-save style.
 
 ### `backend/prices.py` — Price fetching
 

@@ -22,3 +22,27 @@ export interface HoldingsResponse {
   holdings: Omit<Holding, "clientKey">[];
   totals: Totals;
 }
+
+export interface OptionTrade {
+  id: number | null;
+  clientKey: string;
+  origin: string;
+  open_date: string;
+  ticker: string;
+  strategy: string;
+  expiration_date: string;
+  buying_power: number;
+  buy_price: number;
+  fees: number;
+  rolls_credit: number;
+  last_trade_date: string;
+  strike: number;
+  entry_price: number;
+  qty: number;
+  entry_value: number;
+  remaining_dte: number;
+}
+
+export interface OptionTradesResponse {
+  option_trades: Omit<OptionTrade, "clientKey">[];
+}

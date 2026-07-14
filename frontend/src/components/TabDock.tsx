@@ -1,4 +1,4 @@
-export type Tab = "dashboard" | "holdings";
+export type Tab = "dashboard" | "holdings" | "trades";
 
 interface TabDockProps {
   active: Tab;
@@ -8,6 +8,7 @@ interface TabDockProps {
 const tabs: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "holdings", label: "Holdings" },
+  { id: "trades", label: "Trades" },
 ];
 
 export function TabDock({ active, onChange }: TabDockProps) {

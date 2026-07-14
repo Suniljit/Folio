@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend.api.holdings import router as holdings_router
+from backend.api.options_trades import router as options_trades_router
 from backend.db import init_db
 
 
@@ -25,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(holdings_router)
+app.include_router(options_trades_router)
 
 
 @app.get("/health")

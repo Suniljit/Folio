@@ -5,7 +5,7 @@ from alembic import command
 from alembic.config import Config
 from sqlmodel import Session, create_engine, delete, select
 
-from backend.models import Holding
+from backend.models import Holding, OptionTrade
 
 _data_dir = os.environ.get("FOLIO_DATA_DIR")
 DB_PATH = (
@@ -31,4 +31,18 @@ def save_holdings(rows: list[Holding]) -> None:
         for h in rows:
             h.id = None
             session.add(h)
+        session.commit()
+
+
+def get_option_trades() -> list[OptionTrade]:
+    with Session(engine) as session:
+        return list(session.exec(select(OptionTrade).order_by("id")).all())
+
+
+def save_option_trades(rows: list[OptionTrade]) -> None:
+    with Session(engine) as session:
+        session.exec(delete(OptionTrade))
+        for t in rows:
+            t.id = None
+            session.add(t)
         session.commit()

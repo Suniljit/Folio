@@ -3,12 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import * as api from "./api";
-import type { HoldingsResponse } from "./types";
+import type { HoldingsResponse, OptionTradesResponse } from "./types";
 
 vi.mock("./api");
 
 const mockedGetHoldings = vi.mocked(api.getHoldings);
 const mockedSaveHoldings = vi.mocked(api.saveHoldings);
+const mockedGetOptionTrades = vi.mocked(api.getOptionTrades);
+const mockedSaveOptionTrades = vi.mocked(api.saveOptionTrades);
 
 function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {}): HoldingsResponse {
   const holding = {
@@ -34,10 +36,36 @@ function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {})
   };
 }
 
+function tradeResponse(
+  overrides: Partial<OptionTradesResponse["option_trades"][number]> = {},
+): OptionTradesResponse {
+  const trade = {
+    id: 1,
+    origin: "Sunil",
+    open_date: "2026-06-23",
+    ticker: "NVDA",
+    strategy: "CSP",
+    expiration_date: "2026-07-31",
+    buying_power: 2832,
+    buy_price: 625,
+    fees: 0.7,
+    rolls_credit: 0,
+    last_trade_date: "2026-07-31",
+    strike: 195,
+    entry_price: 6.25,
+    qty: -100,
+    entry_value: -625,
+    remaining_dte: 17,
+    ...overrides,
+  };
+  return { option_trades: [trade] };
+}
+
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetHoldings.mockResolvedValue(response());
+    mockedGetOptionTrades.mockResolvedValue(tradeResponse());
   });
 
   afterEach(() => {
@@ -157,5 +185,73 @@ describe("App", () => {
     });
 
     expect(await screen.findByText("$400.00")).toBeInTheDocument();
+  });
+
+  it("loads and displays option trades on the Trades tab", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Trades" }));
+
+    expect(await screen.findByText("NVDA")).toBeInTheDocument();
+    expect(mockedGetOptionTrades).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds a trade via the Add Trade modal and saves immediately", async () => {
+    const user = userEvent.setup();
+    mockedSaveOptionTrades.mockResolvedValue(
+      tradeResponse({ id: 2, origin: "Adam", ticker: "MSFT" }),
+    );
+    render(<App />);
+
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Trades" }));
+    await screen.findByText("NVDA");
+    await user.click(screen.getByRole("button", { name: /\+ add trade/i }));
+    await user.type(screen.getByPlaceholderText("e.g. Sunil"), "Adam");
+    await user.type(screen.getByPlaceholderText("AAPL"), "msft");
+    await user.click(screen.getByRole("button", { name: "Add Trade" }));
+
+    await waitFor(() => expect(mockedSaveOptionTrades).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Trade added!")).toBeInTheDocument();
+    expect(await screen.findByText("MSFT")).toBeInTheDocument();
+  });
+
+  it("deletes a trade from the Edit modal after confirmation", async () => {
+    const user = userEvent.setup();
+    mockedSaveOptionTrades.mockResolvedValue({ option_trades: [] });
+    render(<App />);
+
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Trades" }));
+    await screen.findByText("NVDA");
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => expect(mockedSaveOptionTrades).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Trade deleted!")).toBeInTheDocument();
+    expect(screen.queryByText("NVDA")).not.toBeInTheDocument();
+  });
+
+  it("skips the poll tick for both holdings and trades while a trade modal is open", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ delay: null });
+    render(<App />);
+
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Trades" }));
+    await screen.findByText("NVDA");
+    await user.click(screen.getByRole("button", { name: /\+ add trade/i }));
+
+    mockedGetHoldings.mockClear();
+    mockedGetOptionTrades.mockClear();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+
+    expect(mockedGetHoldings).not.toHaveBeenCalled();
+    expect(mockedGetOptionTrades).not.toHaveBeenCalled();
   });
 });
