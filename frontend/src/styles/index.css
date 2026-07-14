@@ -18,6 +18,8 @@
   --row-separator: oklch(1 0 0 / 0.04);
   --color-text: oklch(0.9 0.006 90);
   --color-text-dim: oklch(0.7 0.006 90);
+  --color-warning-border: oklch(0.66 0.17 25 / 0.35);
+  --color-warning-bg: oklch(0.66 0.17 25 / 0.1);
 
   /* shadcn theme tokens, mapped onto the Folio palette above (single fixed dark theme, no light/dark toggle) */
   --background: var(--color-bg);

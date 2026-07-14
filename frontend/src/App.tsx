@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getHoldings, saveHoldings } from "./api";
+import { DashboardView } from "./components/DashboardView";
 import { HoldingModal } from "./components/HoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
 import { StatCards } from "./components/StatCards";
+import { TabDock, type Tab } from "./components/TabDock";
 import { Toaster } from "./components/ui/sonner";
 import type { Holding, HoldingsResponse, Totals } from "./types";
 
@@ -23,6 +25,7 @@ export default function App() {
     unrealized_pl: 0,
   });
   const [modal, setModal] = useState<ModalState>(null);
+  const [tab, setTab] = useState<Tab>("dashboard");
   const modalOpenRef = useRef(modal !== null);
   const nextTempId = useRef(0);
 
@@ -93,19 +96,26 @@ export default function App() {
   return (
     <div className="page">
       <div className="dashboard">
-        <div className="dashboard-body">
-          <h1 className="dashboard-title">Folio</h1>
-          <StatCards totals={totals} />
-          <div className="refresh-caption">Prices refresh every 30s.</div>
-          <HoldingsTable
-            holdings={holdings}
-            onEdit={(clientKey) => {
-              const holding = holdings.find((h) => h.clientKey === clientKey);
-              if (holding) setModal({ mode: "edit", holding });
-            }}
-            onAddOpen={() => setModal({ mode: "add" })}
-          />
-        </div>
+        {tab === "dashboard" ? (
+          <div className="dashboard-body dashboard-body-with-dock">
+            <DashboardView totals={totals} holdings={holdings} />
+          </div>
+        ) : (
+          <div className="dashboard-body dashboard-body-with-dock">
+            <h1 className="dashboard-title">Folio</h1>
+            <StatCards totals={totals} />
+            <div className="refresh-caption">Prices refresh every 30s.</div>
+            <HoldingsTable
+              holdings={holdings}
+              onEdit={(clientKey) => {
+                const holding = holdings.find((h) => h.clientKey === clientKey);
+                if (holding) setModal({ mode: "edit", holding });
+              }}
+              onAddOpen={() => setModal({ mode: "add" })}
+            />
+          </div>
+        )}
+        <TabDock active={tab} onChange={setTab} />
       </div>
       <HoldingModal
         open={modal !== null}
