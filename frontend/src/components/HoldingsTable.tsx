@@ -5,8 +5,7 @@ import type { Holding } from "../types";
 
 interface HoldingsTableProps {
   holdings: Holding[];
-  onChange: (clientKey: string, field: keyof Holding, value: string) => void;
-  onDelete: (clientKey: string) => void;
+  onEdit: (clientKey: string) => void;
   onAddOpen: () => void;
 }
 
@@ -15,7 +14,7 @@ const columnWidths = ["18%", "9%", "9%", "10%", "9%", "11%", "11%", "11%", "12%"
 const headerClass =
   "h-auto whitespace-normal px-1 py-3.5 text-[11px] tracking-[0.04em] uppercase text-muted-foreground first:pl-5 last:pr-5";
 
-export function HoldingsTable({ holdings, onChange, onDelete, onAddOpen }: HoldingsTableProps) {
+export function HoldingsTable({ holdings, onEdit, onAddOpen }: HoldingsTableProps) {
   return (
     <div className="holdings-panel">
       <Table className="table-fixed">
@@ -40,7 +39,7 @@ export function HoldingsTable({ holdings, onChange, onDelete, onAddOpen }: Holdi
         </TableHeader>
         <TableBody>
           {holdings.map((h) => (
-            <HoldingRow key={h.clientKey} holding={h} onChange={onChange} onDelete={onDelete} />
+            <HoldingRow key={h.clientKey} holding={h} onEdit={onEdit} />
           ))}
         </TableBody>
       </Table>

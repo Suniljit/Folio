@@ -36,6 +36,7 @@ function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {})
 
 describe("App", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockedGetHoldings.mockResolvedValue(response());
   });
 
@@ -47,80 +48,96 @@ describe("App", () => {
   it("loads and displays holdings on mount", async () => {
     render(<App />);
 
-    expect(await screen.findByDisplayValue("Apple")).toBeInTheDocument();
+    expect(await screen.findByText("Apple")).toBeInTheDocument();
     // Market value appears twice: once in the stat card, once in the row.
     expect(screen.getAllByText("$6,306.40")).toHaveLength(2);
     expect(mockedGetHoldings).toHaveBeenCalledTimes(1);
   });
 
-  it("disables Save Changes until an edit is made, then enables it", async () => {
+  it("adds a holding via the Add Holding modal and saves immediately", async () => {
     const user = userEvent.setup();
+    mockedSaveHoldings.mockResolvedValue(
+      response({ id: 2, company_name: "Microsoft", ticker: "MSFT" }),
+    );
     render(<App />);
 
-    const saveButton = await screen.findByRole("button", { name: /save changes/i });
-    expect(saveButton).toBeDisabled();
-
-    const tickerInput = screen.getByDisplayValue("AAPL");
-    await user.type(tickerInput, "X");
-
-    expect(saveButton).toBeEnabled();
-  });
-
-  it("adding then deleting the same row returns to a clean (non-dirty) state", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const saveButton = await screen.findByRole("button", { name: /save changes/i });
+    await screen.findByText("Apple");
     await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
     await user.type(screen.getByPlaceholderText("e.g. Apple"), "Microsoft");
     await user.type(screen.getByPlaceholderText("AAPL"), "msft");
     await user.click(screen.getByRole("button", { name: "Add Holding" }));
-    expect(saveButton).toBeEnabled();
 
-    const deleteButtons = screen.getAllByRole("button", { name: /delete holding/i });
-    await user.click(deleteButtons[deleteButtons.length - 1]);
-
-    expect(saveButton).toBeDisabled();
+    await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Holding added!")).toBeInTheDocument();
+    expect(await screen.findByText("Microsoft")).toBeInTheDocument();
   });
 
-  it("saves the draft and shows a Saved! toast", async () => {
+  it("edits a holding via the Edit modal, pre-filled with its current values", async () => {
     const user = userEvent.setup();
     mockedSaveHoldings.mockResolvedValue(response({ fees: 9.9 }));
     render(<App />);
 
-    const tickerInput = await screen.findByDisplayValue("AAPL");
-    await user.type(tickerInput, "X");
-    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    await screen.findByText("Apple");
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+
+    expect(screen.getByRole("dialog", { name: /edit holding/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("e.g. Apple")).toHaveValue("Apple");
+
+    const fees = screen.getAllByPlaceholderText("0.00")[1];
+    await user.clear(fees);
+    await user.type(fees, "9.9");
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("Saved!")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /save changes/i })).toBeDisabled();
+    expect(await screen.findByText("Holding updated!")).toBeInTheDocument();
   });
 
-  it("discards unsaved edits and shows a toast when a poll tick finds the draft dirty", async () => {
+  it("deletes a holding from the Edit modal after confirmation", async () => {
+    const user = userEvent.setup();
+    mockedSaveHoldings.mockResolvedValue({
+      holdings: [],
+      totals: { market_value: 0, total_cost: 0, unrealized_pl: 0 },
+    });
+    render(<App />);
+
+    await screen.findByText("Apple");
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Holding deleted!")).toBeInTheDocument();
+    expect(screen.queryByText("Apple")).not.toBeInTheDocument();
+  });
+
+  it("does not render a Save Changes button", async () => {
+    render(<App />);
+
+    await screen.findByText("Apple");
+    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
+  });
+
+  it("skips the poll tick while a modal is open", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ delay: null });
     render(<App />);
 
-    const tickerInput = await screen.findByDisplayValue("AAPL");
-    await user.type(tickerInput, "X");
-    expect(screen.getByRole("button", { name: /save changes/i })).toBeEnabled();
+    await screen.findByText("Apple");
+    await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
 
-    mockedGetHoldings.mockResolvedValue(response());
+    mockedGetHoldings.mockClear();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
 
-    expect(await screen.findByText("Refreshed — unsaved edits cleared")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("AAPL")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /save changes/i })).toBeDisabled();
+    expect(mockedGetHoldings).not.toHaveBeenCalled();
   });
 
-  it("silently refreshes computed columns on a poll tick when there are no unsaved edits", async () => {
+  it("silently refreshes computed columns on a poll tick", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<App />);
 
-    await screen.findByDisplayValue("AAPL");
+    await screen.findByText("AAPL");
 
     mockedGetHoldings.mockResolvedValue(response({ current_price: 400 }));
     await act(async () => {
@@ -128,6 +145,5 @@ describe("App", () => {
     });
 
     expect(await screen.findByText("$400.00")).toBeInTheDocument();
-    expect(screen.queryByText("Refreshed — unsaved edits cleared")).not.toBeInTheDocument();
   });
 });
