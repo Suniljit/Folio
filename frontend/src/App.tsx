@@ -1,46 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getHoldings, saveHoldings } from "./api";
-import { AddHoldingModal } from "./components/AddHoldingModal";
+import { HoldingModal } from "./components/HoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
-import { SaveButton } from "./components/SaveButton";
 import { StatCards } from "./components/StatCards";
 import { Toaster } from "./components/ui/sonner";
 import type { Holding, HoldingsResponse, Totals } from "./types";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
+type ModalState = { mode: "add" } | { mode: "edit"; holding: Holding } | null;
+
 function withClientKeys(response: HoldingsResponse): Holding[] {
   return response.holdings.map((h) => ({ ...h, clientKey: String(h.id) }));
 }
 
-function isDirty(draft: Holding[], saved: Holding[]): boolean {
-  const strip = (rows: Holding[]) => rows.map(({ clientKey: _clientKey, ...rest }) => rest);
-  return JSON.stringify(strip(draft)) !== JSON.stringify(strip(saved));
-}
-
 export default function App() {
-  const [savedHoldings, setSavedHoldings] = useState<Holding[]>([]);
-  const [draftHoldings, setDraftHoldings] = useState<Holding[]>([]);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
   const [totals, setTotals] = useState<Totals>({
     market_value: 0,
     total_cost: 0,
     unrealized_pl: 0,
   });
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const draftRef = useRef(draftHoldings);
-  const savedRef = useRef(savedHoldings);
-  const addModalOpenRef = useRef(addModalOpen);
+  const [modal, setModal] = useState<ModalState>(null);
+  const modalOpenRef = useRef(modal !== null);
   const nextTempId = useRef(0);
 
-  draftRef.current = draftHoldings;
-  savedRef.current = savedHoldings;
-  addModalOpenRef.current = addModalOpen;
+  modalOpenRef.current = modal !== null;
 
   const applyResponse = useCallback((response: HoldingsResponse) => {
-    const withKeys = withClientKeys(response);
-    setSavedHoldings(withKeys);
-    setDraftHoldings(withKeys);
+    setHoldings(withClientKeys(response));
     setTotals(response.totals);
   }, []);
 
@@ -48,36 +37,19 @@ export default function App() {
     getHoldings().then(applyResponse);
 
     const interval = window.setInterval(() => {
-      if (addModalOpenRef.current) return;
-      getHoldings().then((response) => {
-        const dirty = isDirty(draftRef.current, savedRef.current);
-        applyResponse(response);
-        if (dirty) {
-          toast("Refreshed — unsaved edits cleared");
-        }
-      });
+      if (modalOpenRef.current) return;
+      getHoldings().then(applyResponse);
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
   }, [applyResponse]);
 
-  const handleChange = (clientKey: string, field: keyof Holding, value: string) => {
-    setDraftHoldings((rows) =>
-      rows.map((row) => {
-        if (row.clientKey !== clientKey) return row;
-        const numeric = field === "shares_owned" || field === "avg_price" || field === "fees";
-        return { ...row, [field]: numeric ? parseFloat(value) || 0 : value };
-      }),
-    );
-  };
+  type HoldingFields = Pick<
+    Holding,
+    "company_name" | "ticker" | "shares_owned" | "avg_price" | "fees"
+  >;
 
-  const handleDelete = (clientKey: string) => {
-    setDraftHoldings((rows) => rows.filter((row) => row.clientKey !== clientKey));
-  };
-
-  const handleAddSubmit = (
-    fields: Pick<Holding, "company_name" | "ticker" | "shares_owned" | "avg_price" | "fees">,
-  ) => {
+  const handleAddSubmit = (fields: HoldingFields) => {
     nextTempId.current -= 1;
     const row: Holding = {
       id: null,
@@ -88,23 +60,35 @@ export default function App() {
       market_value: 0,
       unrealized_pl: 0,
     };
-    const updated = [...draftHoldings, row];
-    setDraftHoldings(updated);
-    setAddModalOpen(false);
+    const updated = [...holdings, row];
+    setModal(null);
     saveHoldings(updated).then((response) => {
       applyResponse(response);
       toast("Holding added!");
     });
   };
 
-  const handleSave = () => {
-    saveHoldings(draftHoldings).then((response) => {
+  const handleEditSubmit = (fields: HoldingFields) => {
+    if (modal?.mode !== "edit") return;
+    const updated = holdings.map((row) =>
+      row.clientKey === modal.holding.clientKey ? { ...row, ...fields } : row,
+    );
+    setModal(null);
+    saveHoldings(updated).then((response) => {
       applyResponse(response);
-      toast("Saved!");
+      toast("Holding updated!");
     });
   };
 
-  const dirty = isDirty(draftHoldings, savedHoldings);
+  const handleDeleteHolding = () => {
+    if (modal?.mode !== "edit") return;
+    const updated = holdings.filter((row) => row.clientKey !== modal.holding.clientKey);
+    setModal(null);
+    saveHoldings(updated).then((response) => {
+      applyResponse(response);
+      toast("Holding deleted!");
+    });
+  };
 
   return (
     <div className="page">
@@ -112,22 +96,24 @@ export default function App() {
         <div className="dashboard-body">
           <h1 className="dashboard-title">Folio</h1>
           <StatCards totals={totals} />
-          <div className="refresh-caption">
-            Prices refresh every 30s. Unsaved edits are cleared on refresh — save first.
-          </div>
+          <div className="refresh-caption">Prices refresh every 30s.</div>
           <HoldingsTable
-            holdings={draftHoldings}
-            onChange={handleChange}
-            onDelete={handleDelete}
-            onAddOpen={() => setAddModalOpen(true)}
+            holdings={holdings}
+            onEdit={(clientKey) => {
+              const holding = holdings.find((h) => h.clientKey === clientKey);
+              if (holding) setModal({ mode: "edit", holding });
+            }}
+            onAddOpen={() => setModal({ mode: "add" })}
           />
-          <SaveButton onSave={handleSave} disabled={!dirty} />
         </div>
       </div>
-      <AddHoldingModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleAddSubmit}
+      <HoldingModal
+        open={modal !== null}
+        mode={modal?.mode ?? "add"}
+        initialValues={modal?.mode === "edit" ? modal.holding : undefined}
+        onClose={() => setModal(null)}
+        onSubmit={modal?.mode === "edit" ? handleEditSubmit : handleAddSubmit}
+        onDelete={modal?.mode === "edit" ? handleDeleteHolding : undefined}
       />
       <Toaster position="bottom-right" />
     </div>
