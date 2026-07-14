@@ -17,6 +17,8 @@ npm --prefix frontend run test                         # frontend tests (vitest)
 npm --prefix frontend run lint                          # frontend lint (oxlint)
 npm --prefix frontend run format                         # frontend format (prettier --write)
 npm --prefix frontend run format:check                    # frontend format check (prettier --check)
+npm run electron:dev                                    # macOS Electron app in dev mode (spawns backend + frontend dev servers)
+npm run electron:build                                   # build a distributable .dmg (frontend build + backend freeze + package)
 ```
 
 ## Architecture
@@ -32,3 +34,5 @@ FastAPI backend + React/Vite SPA frontend:
 Calculated columns (`total_cost`, `market_value`, `unrealized_pl`) are derived in `backend/api/holdings.py` and never stored in the database or recomputed client-side.
 
 If the frontend's local edits (`draftHoldings`) differ from the last-fetched server state when a 30s poll tick lands, the poll discards the local edits in favor of fresh server data and shows a toast ("Refreshed — unsaved edits cleared") — this replicates the original Streamlit rerun behavior; see [docs/adr/007-frontend-framework-revisit.md](docs/adr/007-frontend-framework-revisit.md).
+
+- **`electron/main.js`** — spawns the backend as a child process (dev: `uv run uvicorn --reload`; prod: a PyInstaller-frozen binary via `backend/run_server.py`), polls `GET /health` until ready, then opens a `BrowserWindow`. Kills the backend on quit. `FOLIO_DATA_DIR`/`FOLIO_PORT` env vars (read in `backend/db.py`/`backend/run_server.py`) redirect the DB and port for the packaged app; see [docs/adr/009-electron-desktop-packaging.md](docs/adr/009-electron-desktop-packaging.md).

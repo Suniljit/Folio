@@ -103,6 +103,15 @@ User clicks "Save Changes"
 
 The frontend uses a plain `setInterval` (30,000 ms) that calls `GET /api/holdings`. This replaces `streamlit-autorefresh`'s JS-triggered rerun — see [ADR 007](adr/007-frontend-framework-revisit.md) — but preserves the same contract: the 30-second interval and "unsaved edits are cleared on refresh" behavior are unchanged from the original design (see [ADR 004](adr/004-auto-refresh-strategy.md) and [ADR 005](adr/005-save-strategy.md)).
 
+## Desktop packaging (Electron)
+
+Folio also ships as a packaged macOS app (see [ADR 009](adr/009-electron-desktop-packaging.md)). This is additive to the web-app architecture above — the same FastAPI backend and React frontend run unmodified; Electron only adds a process-orchestration layer around them.
+
+- **`electron/main.js`** spawns the backend as a child process — in dev, `uv run uvicorn backend.main:app --reload` against `:8000` (loading `http://localhost:5173` in the window); in prod, a PyInstaller-frozen `folio-backend` binary (loading `http://127.0.0.1:8756`).
+- It polls `GET /health` until the backend responds, then opens the `BrowserWindow`. On quit, it kills the spawned backend process — no orphaned processes survive the app closing.
+- **`FOLIO_DATA_DIR`** (read once at import in `backend/db.py`) redirects `DB_PATH` to Electron's `app.getPath('userData')` (`~/Library/Application Support/Folio/`) when set by the prod-mode spawn; unset (the normal `uv run uvicorn` path), `DB_PATH` is unchanged from before. **`FOLIO_PORT`** similarly configures the port `backend/run_server.py` binds to.
+- Packaging (`npm run electron:build`) chains: frontend build → PyInstaller freeze (`folio-backend.spec`, one-folder build) → `electron-builder` (`electron-builder.yml`), producing an unsigned `.dmg` for local/personal use.
+
 ## Known constraints
 
 - **Single user**: SQLite has no concurrency protection. Running multiple browser sessions simultaneously can produce inconsistent state.

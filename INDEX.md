@@ -26,6 +26,9 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`ROADMAP.md`](ROADMAP.md) | Feature roadmap: phases, target DB schema, decisions log |
 | [`INDEX.md`](INDEX.md) | This file — documentation navigation |
 | [`pyproject.toml`](pyproject.toml) | Backend dependencies, ruff/taskipy config |
+| [`package.json`](package.json) | Electron dependencies, `electron:dev`/`electron:build` scripts |
+| [`electron-builder.yml`](electron-builder.yml) | macOS packaging config (`.dmg` output, `extraResources`) |
+| [`folio-backend.spec`](folio-backend.spec) | PyInstaller spec freezing the backend for packaging |
 | [`tests/`](tests/) | pytest suite for the API |
 
 ### `backend/` — FastAPI app
@@ -33,6 +36,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | File | Contents |
 |------|----------|
 | [`backend/main.py`](backend/main.py) | FastAPI app: routes, CORS, static frontend mount for prod |
+| [`backend/run_server.py`](backend/run_server.py) | `uvicorn.run()` entry point; used as the PyInstaller target for the Electron app |
 | [`backend/api/holdings.py`](backend/api/holdings.py) | `GET`/`POST /api/holdings` — computed columns, price caching |
 | [`backend/schemas.py`](backend/schemas.py) | Pydantic request/response models |
 | [`backend/db.py`](backend/db.py) | SQLModel sessions: `init_db`, `get_holdings`, `save_holdings` |
@@ -52,6 +56,13 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | `frontend/src/*.test.ts(x)`, [`frontend/src/test/`](frontend/src/test/) | Vitest + React Testing Library tests and shared fixtures/setup |
 | [`frontend/vite.config.ts`](frontend/vite.config.ts) | Dev server + `/api` proxy to the backend; also configures the Vitest test environment |
 | [`frontend/.prettierrc.json`](frontend/.prettierrc.json) | Prettier formatting rules |
+
+### `electron/` — macOS app shell
+
+| File | Contents |
+|------|----------|
+| [`electron/main.js`](electron/main.js) | Electron main process: spawns the backend (dev or frozen prod binary), polls `/health`, opens the `BrowserWindow`, kills the backend on quit |
+| [`electron/preload.js`](electron/preload.js) | Minimal preload — renderer talks to `/api` over HTTP, no IPC needed |
 
 ### `docs/` — Design and reference
 
@@ -74,3 +85,4 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`docs/adr/006-orm.md`](docs/adr/006-orm.md) | SQLModel + Alembic over raw sqlite3 |
 | [`docs/adr/007-frontend-framework-revisit.md`](docs/adr/007-frontend-framework-revisit.md) | FastAPI + React/Vite over Streamlit, for pixel-accurate design fidelity — **styling clause superseded by ADR 008** |
 | [`docs/adr/008-adopt-shadcn-tailwind.md`](docs/adr/008-adopt-shadcn-tailwind.md) | Tailwind CSS + shadcn/ui over hand-rolled CSS components |
+| [`docs/adr/009-electron-desktop-packaging.md`](docs/adr/009-electron-desktop-packaging.md) | Electron over Tauri or native Swift, for a packaged macOS app |

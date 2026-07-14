@@ -1,5 +1,13 @@
 # User Guide
 
+## Installing the macOS app
+
+1. Open the built `.dmg` (see [README.md](../README.md#macos-desktop-app) for how to build it) and drag **Folio** into Applications.
+2. On first launch, macOS Gatekeeper will block the app since it isn't signed (personal-use build, no Apple Developer account). Right-click **Folio** and choose **Open**, then confirm — this is only needed once.
+3. Data is stored at `~/Library/Application Support/Folio/portfolio.db`, separate from the repo-root `portfolio.db` used by the `uv run uvicorn` web path. Quitting the app also stops its backend automatically — no manual server management needed.
+
+---
+
 ## Starting the app
 
 ```bash

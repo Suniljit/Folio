@@ -1,0 +1,15 @@
+appId: com.suniljit.folio
+productName: Folio
+directories:
+  output: dist-electron
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+  - package.json
+extraResources:
+  - from: dist/folio-backend
+    to: folio-backend
+mac:
+  category: public.app-category.finance
+  target:
+    - dmg

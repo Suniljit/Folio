@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from alembic import command
@@ -6,7 +7,11 @@ from sqlmodel import Session, create_engine, delete, select
 
 from backend.models import Holding
 
-DB_PATH = Path(__file__).parent.parent / "portfolio.db"
+_data_dir = os.environ.get("FOLIO_DATA_DIR")
+DB_PATH = (
+    Path(_data_dir) / "portfolio.db" if _data_dir else Path(__file__).parent.parent / "portfolio.db"
+)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 engine = create_engine(f"sqlite:///{DB_PATH}")
 
 

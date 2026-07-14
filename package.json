@@ -1,0 +1,18 @@
+{
+  "name": "folio-electron",
+  "productName": "Folio",
+  "private": true,
+  "version": "0.1.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "electron:dev": "concurrently -k \"uv run uvicorn backend.main:app --reload --port 8000\" \"npm --prefix frontend run dev\" \"wait-on tcp:8000 tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm --prefix frontend run build && uv run task build-backend && electron-builder --mac"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "wait-on": "^8.0.0"
+  }
+}
