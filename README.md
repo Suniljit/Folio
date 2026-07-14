@@ -45,12 +45,36 @@ cd frontend && npm run dev
 
 Open `http://localhost:5173`.
 
+## macOS desktop app
+
+Folio can also run as a native-feeling macOS app via Electron, which wraps the existing backend/frontend and spawns them automatically instead of requiring manual server commands.
+
+```bash
+# Install root-level Electron dependencies (only needed once)
+npm install
+
+# Run the desktop app in dev mode (spawns backend + frontend dev servers automatically)
+npm run electron:dev
+
+# Build a distributable .dmg (frontend build + backend freeze + packaging)
+npm run electron:build
+```
+
+The packaged app is unsigned (personal use only, no Apple Developer account) — on first launch, right-click the app and choose **Open** to bypass Gatekeeper. See [ADR 009](docs/adr/009-electron-desktop-packaging.md) for details, including where the packaged app stores its data.
+
 ## Project layout
 
 ```
 folio/
+├── electron/
+│   ├── main.js       # Electron main process: spawns backend, health-checks, opens window
+│   └── preload.js    # minimal preload (renderer talks to /api over HTTP, no IPC)
+├── package.json       # Electron dependencies + electron:dev/electron:build scripts
+├── electron-builder.yml  # macOS packaging config (.dmg output)
+├── folio-backend.spec    # PyInstaller spec for freezing the backend
 ├── backend/
 │   ├── main.py       # FastAPI app: routes, CORS, static frontend mount
+│   ├── run_server.py # uvicorn.run() entry point, used as the PyInstaller target
 │   ├── api/
 │   │   └── holdings.py   # GET/POST /api/holdings
 │   ├── schemas.py    # Pydantic request/response models
