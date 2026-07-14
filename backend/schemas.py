@@ -35,3 +35,46 @@ class Totals(BaseModel):
 class HoldingsResponse(BaseModel):
     holdings: list[HoldingOut]
     totals: Totals
+
+
+class OptionTradeIn(BaseModel):
+    origin: str = ""
+    open_date: str = ""
+    ticker: str
+    strategy: str = ""
+    expiration_date: str = ""
+    buying_power: float = 0.0
+    buy_price: float = 0.0
+    fees: float = 0.0
+    rolls_credit: float = 0.0
+    last_trade_date: str = ""
+    strike: float = 0.0
+    entry_price: float = 0.0
+    qty: float = 0.0
+
+
+class OptionTradesSaveRequest(BaseModel):
+    option_trades: list[OptionTradeIn]
+
+
+class OptionTradeOut(BaseModel):
+    id: int
+    origin: str
+    open_date: str
+    ticker: str
+    strategy: str
+    expiration_date: str
+    buying_power: float
+    buy_price: float
+    fees: float
+    rolls_credit: float
+    last_trade_date: str
+    strike: float
+    entry_price: float
+    qty: float
+    entry_value: float
+    remaining_dte: int
+
+
+class OptionTradesResponse(BaseModel):
+    option_trades: list[OptionTradeOut]

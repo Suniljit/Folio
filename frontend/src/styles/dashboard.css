@@ -87,6 +87,22 @@
   padding: 12px 20px;
 }
 
+.trades-panel {
+  background: var(--color-table-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-table-border);
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.trades-panel thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-table-bg);
+  z-index: 1;
+}
+
 .modal-fields {
   display: flex;
   flex-direction: column;
