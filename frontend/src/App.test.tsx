@@ -46,7 +46,11 @@ describe("App", () => {
   });
 
   it("loads and displays holdings on mount", async () => {
+    const user = userEvent.setup();
     render(<App />);
+
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Holdings" }));
 
     expect(await screen.findByText("Apple")).toBeInTheDocument();
     // Market value appears twice: once in the stat card, once in the row.
@@ -61,6 +65,8 @@ describe("App", () => {
     );
     render(<App />);
 
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Holdings" }));
     await screen.findByText("Apple");
     await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
     await user.type(screen.getByPlaceholderText("e.g. Apple"), "Microsoft");
@@ -77,6 +83,8 @@ describe("App", () => {
     mockedSaveHoldings.mockResolvedValue(response({ fees: 9.9 }));
     render(<App />);
 
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Holdings" }));
     await screen.findByText("Apple");
     await user.click(screen.getByRole("button", { name: /edit/i }));
 
@@ -100,6 +108,8 @@ describe("App", () => {
     });
     render(<App />);
 
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Holdings" }));
     await screen.findByText("Apple");
     await user.click(screen.getByRole("button", { name: /edit/i }));
     await user.click(screen.getByRole("button", { name: "Delete" }));
@@ -122,6 +132,8 @@ describe("App", () => {
     const user = userEvent.setup({ delay: null });
     render(<App />);
 
+    await screen.findByText("AAPL");
+    await user.click(screen.getByRole("button", { name: "Holdings" }));
     await screen.findByText("Apple");
     await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
 
