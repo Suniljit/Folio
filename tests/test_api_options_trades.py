@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 
 def test_get_option_trades_empty_db(client):
@@ -10,7 +10,7 @@ def test_get_option_trades_empty_db(client):
 
 
 def test_post_option_trades_full_replace(client):
-    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=0.0)):
         first = client.post(
             "/api/options-trades",
             json={
@@ -39,7 +39,7 @@ def test_post_option_trades_full_replace(client):
 
 def test_computed_fields_match_formulas(client):
     expiration = date.today() + timedelta(days=30)
-    with patch("backend.api.options_trades.fetch_option_price", return_value=8.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=8.0)):
         response = client.post(
             "/api/options-trades",
             json={
@@ -74,7 +74,7 @@ def test_computed_fields_match_formulas(client):
 
 
 def test_pct_pl_and_roi_default_to_zero_when_denominator_is_zero(client):
-    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=0.0)):
         response = client.post(
             "/api/options-trades",
             json={
@@ -90,7 +90,7 @@ def test_pct_pl_and_roi_default_to_zero_when_denominator_is_zero(client):
 
 
 def test_blank_expiration_date_defaults_dte_to_zero(client):
-    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=0.0)):
         response = client.post(
             "/api/options-trades",
             json={
@@ -105,7 +105,7 @@ def test_blank_expiration_date_defaults_dte_to_zero(client):
 
 
 def test_empty_ticker_rows_are_dropped(client):
-    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=0.0)):
         response = client.post(
             "/api/options-trades",
             json={
@@ -123,7 +123,7 @@ def test_empty_ticker_rows_are_dropped(client):
 
 
 def test_option_price_fetch_failure_falls_back_to_zero(client):
-    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=0.0)):
         response = client.post(
             "/api/options-trades",
             json={
@@ -135,3 +135,39 @@ def test_option_price_fetch_failure_falls_back_to_zero(client):
 
     row = response.json()["option_trades"][0]
     assert row["current_price"] == 0.0
+
+
+def test_ibkr_unreachable_falls_back_to_zero_and_flags_disconnected(client):
+    with (
+        patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=None)),
+        patch("backend.api.options_trades.ensure_connected", new=AsyncMock(return_value=False)),
+    ):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                ]
+            },
+        )
+
+    body = response.json()
+    assert body["ibkr_connected"] is False
+    assert body["option_trades"][0]["current_price"] == 0.0
+
+
+def test_ibkr_connected_flag_true_when_connection_succeeds(client):
+    with (
+        patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=8.0)),
+        patch("backend.api.options_trades.ensure_connected", new=AsyncMock(return_value=True)),
+    ):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                ]
+            },
+        )
+
+    assert response.json()["ibkr_connected"] is True

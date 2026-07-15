@@ -85,3 +85,4 @@ class OptionTradeOut(BaseModel):
 
 class OptionTradesResponse(BaseModel):
     option_trades: list[OptionTradeOut]
+    ibkr_connected: bool = True

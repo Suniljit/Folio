@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "yfinance>=0.2.40",
+    "ib-async>=1.0.3",
     "loguru>=0.7.0",
     "sqlmodel>=0.0.38",
     "alembic>=1.18.4",

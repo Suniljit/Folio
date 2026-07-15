@@ -64,7 +64,7 @@ function tradeResponse(
     roi: 0.026,
     ...overrides,
   };
-  return { option_trades: [trade] };
+  return { option_trades: [trade], ibkr_connected: true };
 }
 
 describe("App", () => {
@@ -226,7 +226,7 @@ describe("App", () => {
 
   it("deletes a trade from the Edit modal after confirmation", async () => {
     const user = userEvent.setup();
-    mockedSaveOptionTrades.mockResolvedValue({ option_trades: [] });
+    mockedSaveOptionTrades.mockResolvedValue({ option_trades: [], ibkr_connected: true });
     render(<App />);
 
     await screen.findByText("AAPL");
