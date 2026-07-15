@@ -42,6 +42,7 @@ class OptionTradeIn(BaseModel):
     open_date: str = ""
     ticker: str
     strategy: str = ""
+    option_type: str = ""
     expiration_date: str = ""
     buying_power: float = 0.0
     buy_price: float = 0.0
@@ -50,7 +51,7 @@ class OptionTradeIn(BaseModel):
     last_trade_date: str = ""
     strike: float = 0.0
     entry_price: float = 0.0
-    qty: float = 0.0
+    contracts: float = 0.0
 
 
 class OptionTradesSaveRequest(BaseModel):
@@ -63,6 +64,7 @@ class OptionTradeOut(BaseModel):
     open_date: str
     ticker: str
     strategy: str
+    option_type: str
     expiration_date: str
     buying_power: float
     buy_price: float
@@ -71,9 +73,14 @@ class OptionTradeOut(BaseModel):
     last_trade_date: str
     strike: float
     entry_price: float
-    qty: float
+    contracts: float
     entry_value: float
     remaining_dte: int
+    current_price: float
+    pl_open: float
+    pct_pl: float
+    total_pl: float
+    roi: float
 
 
 class OptionTradesResponse(BaseModel):

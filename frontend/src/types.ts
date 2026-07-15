@@ -30,6 +30,7 @@ export interface OptionTrade {
   open_date: string;
   ticker: string;
   strategy: string;
+  option_type: string;
   expiration_date: string;
   buying_power: number;
   buy_price: number;
@@ -38,9 +39,14 @@ export interface OptionTrade {
   last_trade_date: string;
   strike: number;
   entry_price: number;
-  qty: number;
+  contracts: number;
   entry_value: number;
   remaining_dte: number;
+  current_price: number;
+  pl_open: number;
+  pct_pl: number;
+  total_pl: number;
+  roi: number;
 }
 
 export interface OptionTradesResponse {

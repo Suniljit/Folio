@@ -118,6 +118,7 @@ export default function App() {
     | "open_date"
     | "ticker"
     | "strategy"
+    | "option_type"
     | "expiration_date"
     | "buying_power"
     | "buy_price"
@@ -126,7 +127,7 @@ export default function App() {
     | "last_trade_date"
     | "strike"
     | "entry_price"
-    | "qty"
+    | "contracts"
   >;
 
   const handleAddTradeSubmit = (fields: OptionTradeFields) => {
@@ -137,6 +138,11 @@ export default function App() {
       ...fields,
       entry_value: 0,
       remaining_dte: 0,
+      current_price: 0,
+      pl_open: 0,
+      pct_pl: 0,
+      total_pl: 0,
+      roi: 0,
     };
     const updated = [...optionTrades, row];
     setModal(null);

@@ -18,8 +18,10 @@ def client(temp_engine):
     from fastapi.testclient import TestClient
 
     from backend.api import holdings as holdings_api
+    from backend.api import options_trades as options_trades_api
     from backend.main import app
 
     holdings_api._price_cache.clear()
+    options_trades_api._price_cache.clear()
     with TestClient(app) as test_client:
         yield test_client

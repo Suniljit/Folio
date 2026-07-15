@@ -54,10 +54,10 @@ Computed columns are derived here, once, in Python — the frontend only formats
 
 ### `backend/api/options_trades.py` — API layer
 
-- `GET /api/options-trades` — returns all option trades with stored fields plus computed fields (`entry_value`, `remaining_dte`). No external data source or cache is involved — both are pure arithmetic on stored fields.
-- `POST /api/options-trades` — full replace: drops rows with an empty ticker, calls `save_option_trades()`, and returns the same shape as GET.
+- `GET /api/options-trades` — returns all option trades with stored fields plus computed fields (`entry_value`, `remaining_dte`, `current_price`, `pl_open`, `pct_pl`, `total_pl`, `roi`). `current_price` is fetched from yfinance's option chain and cached in-process for 30 seconds per `(ticker, expiration_date, strike, option_type)` key; the rest are pure arithmetic derived from it.
+- `POST /api/options-trades` — full replace: drops rows with an empty ticker, calls `save_option_trades()`, clears the option-price cache, and returns the same shape as GET.
 
-There is no live/mark-to-market pricing for open option positions yet (no options-chain data source exists in this codebase), so fields like P/L-open, rolls P/L, and ROI are intentionally out of scope for now — see [data-model.md](data-model.md#options-trades-schema).
+Live option marks come from `backend/option_prices.py` (`yf.Ticker(ticker).option_chain(expiration_date)`), mirroring the stock-price pattern in `backend/prices.py` — see [ADR 010](adr/010-options-pricing-source.md) and [data-model.md](data-model.md#options-trades-schema).
 
 ### `backend/db.py` — Persistence layer
 

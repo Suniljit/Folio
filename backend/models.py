@@ -22,6 +22,7 @@ class OptionTrade(SQLModel, table=True):
     open_date: str = Field(default="")
     ticker: str
     strategy: str = Field(default="")
+    option_type: str = Field(default="")
     expiration_date: str = Field(default="")
     buying_power: float = Field(default=0.0)
     buy_price: float = Field(default=0.0)
@@ -30,4 +31,4 @@ class OptionTrade(SQLModel, table=True):
     last_trade_date: str = Field(default="")
     strike: float = Field(default=0.0)
     entry_price: float = Field(default=0.0)
-    qty: float = Field(default=0.0)
+    contracts: float = Field(default=0.0)

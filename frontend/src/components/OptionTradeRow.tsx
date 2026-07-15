@@ -1,6 +1,6 @@
 import { TableCell, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
-import { fmtUSD } from "../format";
+import { fmtUSD, fmtPct } from "../format";
 import type { OptionTrade } from "../types";
 
 interface OptionTradeRowProps {
@@ -15,6 +15,7 @@ export function OptionTradeRow({ trade, onEdit }: OptionTradeRowProps) {
       <TableCell className="px-1 py-2">{trade.open_date}</TableCell>
       <TableCell className="px-1 py-2">{trade.ticker}</TableCell>
       <TableCell className="px-1 py-2">{trade.strategy}</TableCell>
+      <TableCell className="px-1 py-2">{trade.option_type}</TableCell>
       <TableCell className="px-1 py-2">{trade.expiration_date}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.buying_power)}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.buy_price)}</TableCell>
@@ -23,9 +24,14 @@ export function OptionTradeRow({ trade, onEdit }: OptionTradeRowProps) {
       <TableCell className="px-1 py-2">{trade.last_trade_date}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.strike)}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.entry_price)}</TableCell>
-      <TableCell className="px-1 py-2">{trade.qty}</TableCell>
+      <TableCell className="px-1 py-2">{trade.contracts}</TableCell>
       <TableCell className="cell-computed px-1 py-2">{fmtUSD(trade.entry_value)}</TableCell>
       <TableCell className="cell-computed px-1 py-2">{trade.remaining_dte}</TableCell>
+      <TableCell className="cell-computed px-1 py-2">{fmtUSD(trade.current_price)}</TableCell>
+      <TableCell className="cell-computed px-1 py-2">{fmtUSD(trade.pl_open)}</TableCell>
+      <TableCell className="cell-computed px-1 py-2">{fmtPct(trade.pct_pl)}</TableCell>
+      <TableCell className="cell-computed px-1 py-2">{fmtUSD(trade.total_pl)}</TableCell>
+      <TableCell className="cell-computed px-1 py-2">{fmtPct(trade.roi)}</TableCell>
       <TableCell className="py-2 pr-5 pl-1 text-center">
         <Button type="button" variant="outline" size="xs" onClick={() => onEdit(trade.clientKey)}>
           Edit

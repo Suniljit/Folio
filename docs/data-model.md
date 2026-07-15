@@ -96,6 +96,7 @@ class OptionTrade(SQLModel, table=True):
     open_date: str = Field(default="")
     ticker: str
     strategy: str = Field(default="")
+    option_type: str = Field(default="")
     expiration_date: str = Field(default="")
     buying_power: float = Field(default=0.0)
     buy_price: float = Field(default=0.0)
@@ -104,10 +105,10 @@ class OptionTrade(SQLModel, table=True):
     last_trade_date: str = Field(default="")
     strike: float = Field(default=0.0)
     entry_price: float = Field(default=0.0)
-    qty: float = Field(default=0.0)
+    contracts: float = Field(default=0.0)
 ```
 
-All fields are manual entry — there's no options-chain data source in this codebase, so unlike `current_price` on `Holding`, nothing here is fetched from an external API. Dates are stored as plain ISO `YYYY-MM-DD` strings, matching the rest of the model's all-primitives style.
+All fields above are manual entry. `current_price` (and everything derived from it) is fetched live from yfinance's option chain, mirroring `current_price` on `Holding` — see [ADR 010](adr/010-options-pricing-source.md). Dates are stored as plain ISO `YYYY-MM-DD` strings, matching the rest of the model's all-primitives style.
 
 ### Stored vs. calculated columns
 
@@ -117,6 +118,7 @@ All fields are manual entry — there's no options-chain data source in this cod
 | `open_date` | Yes | Yes | User input |
 | `ticker` | Yes | Yes | User input; normalised to uppercase on save |
 | `strategy` | Yes | Yes | User input |
+| `option_type` | Yes | Yes | User input; `"call"` or `"put"` |
 | `expiration_date` | Yes | Yes | User input |
 | `buying_power` | Yes | Yes | User input |
 | `buy_price` | Yes | Yes | User input (debit) |
@@ -125,18 +127,28 @@ All fields are manual entry — there's no options-chain data source in this cod
 | `last_trade_date` | Yes | Yes | User input |
 | `strike` | Yes | Yes | User input |
 | `entry_price` | Yes | Yes | User input |
-| `qty` | Yes | Yes | User input; signed (negative for short positions) |
-| `entry_value` | **No** | No | `qty × entry_price` |
+| `contracts` | Yes | Yes | User input; signed (negative for short positions) |
+| `entry_value` | **No** | No | `contracts × entry_price × 100` |
 | `remaining_dte` | **No** | No | `expiration_date − today` (days) |
+| `current_price` | **No** | No | yfinance `option_chain()` mark (`lastPrice`), cached 30s |
+| `pl_open` | **No** | No | `(current_price − entry_price) × 100 × contracts` |
+| `pct_pl` | **No** | No | `pl_open / entry_value` (0 if `entry_value` is 0) |
+| `total_pl` | **No** | No | `pl_open + rolls_credit − fees` |
+| `roi` | **No** | No | `total_pl / buying_power` (0 if `buying_power` is 0) |
 
 ### Formulas
 
 ```
-entry_value    = qty × entry_price
+entry_value    = contracts × entry_price × 100
 remaining_dte  = (expiration_date − today).days
+current_price  = yfinance option_chain mark (lastPrice), cached 30s, 0.0 on failure
+pl_open        = (current_price − entry_price) × 100 × contracts
+pct_pl         = pl_open / entry_value                 (0 if entry_value == 0)
+total_pl       = pl_open + rolls_credit − fees
+roi            = total_pl / buying_power                (0 if buying_power == 0)
 ```
 
-**Intentionally deferred**: mark-to-market fields (P/L Open, Rolls P/L) and everything that mathematically depends on them (% P/L, Total P/L, ROI) are not tracked yet, since there's no options-pricing data source to compute a live P/L against. These can be added once live options pricing is available.
+The `× 100` factor is the standard 100-shares-per-contract multiplier; `contracts` is the signed count of contracts (negative for short positions), so `entry_value` and `pl_open` stay on the same dollar scale and `pct_pl` comes out as a normal percentage.
 
 ### Save behaviour
 

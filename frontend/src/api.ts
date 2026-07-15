@@ -40,6 +40,7 @@ export async function saveOptionTrades(trades: OptionTrade[]): Promise<OptionTra
         open_date: t.open_date,
         ticker: t.ticker,
         strategy: t.strategy,
+        option_type: t.option_type,
         expiration_date: t.expiration_date,
         buying_power: t.buying_power,
         buy_price: t.buy_price,
@@ -48,7 +49,7 @@ export async function saveOptionTrades(trades: OptionTrade[]): Promise<OptionTra
         last_trade_date: t.last_trade_date,
         strike: t.strike,
         entry_price: t.entry_price,
-        qty: t.qty,
+        contracts: t.contracts,
       })),
     }),
   });
