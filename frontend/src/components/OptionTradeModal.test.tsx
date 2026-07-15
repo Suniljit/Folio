@@ -50,6 +50,7 @@ describe("OptionTradeModal", () => {
         origin: "Sunil",
         ticker: "NVDA",
         strategy: "CSP",
+        option_type: "",
         open_date: "",
         expiration_date: "",
         last_trade_date: "",
@@ -59,7 +60,7 @@ describe("OptionTradeModal", () => {
         buying_power: 0,
         fees: 0,
         rolls_credit: 0,
-        qty: -100,
+        contracts: -100,
       });
     });
 
@@ -82,6 +83,7 @@ describe("OptionTradeModal", () => {
       open_date: "2026-06-23",
       ticker: "NVDA",
       strategy: "CSP",
+      option_type: "put",
       expiration_date: "2026-07-31",
       buying_power: 2832,
       buy_price: 625,
@@ -90,7 +92,7 @@ describe("OptionTradeModal", () => {
       last_trade_date: "2026-07-31",
       strike: 195,
       entry_price: 6.25,
-      qty: -100,
+      contracts: -100,
     };
 
     it("pre-fills the form with initial values", () => {
@@ -124,12 +126,12 @@ describe("OptionTradeModal", () => {
         />,
       );
 
-      const qty = screen.getByPlaceholderText("0");
-      await user.clear(qty);
-      await user.type(qty, "-200");
+      const contracts = screen.getByPlaceholderText("0");
+      await user.clear(contracts);
+      await user.type(contracts, "-200");
       await user.click(screen.getByRole("button", { name: "Save" }));
 
-      expect(onSubmit).toHaveBeenCalledWith({ ...initialValues, qty: -200 });
+      expect(onSubmit).toHaveBeenCalledWith({ ...initialValues, contracts: -200 });
     });
 
     it("shows a delete confirmation step before calling onDelete", async () => {

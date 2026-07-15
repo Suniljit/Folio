@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from unittest.mock import patch
 
 
 def test_get_option_trades_empty_db(client):
@@ -9,80 +10,128 @@ def test_get_option_trades_empty_db(client):
 
 
 def test_post_option_trades_full_replace(client):
-    first = client.post(
-        "/api/options-trades",
-        json={
-            "option_trades": [
-                {"ticker": "AAPL", "origin": "Sunil", "qty": -100, "entry_price": 5},
-                {"ticker": "MSFT", "origin": "Adam", "qty": -100, "entry_price": 9.75},
-            ]
-        },
-    )
-    assert first.status_code == 200
-    assert len(first.json()["option_trades"]) == 2
+    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+        first = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                    {"ticker": "MSFT", "origin": "Adam", "contracts": -1, "entry_price": 9.75},
+                ]
+            },
+        )
+        assert first.status_code == 200
+        assert len(first.json()["option_trades"]) == 2
 
-    second = client.post(
-        "/api/options-trades",
-        json={
-            "option_trades": [
-                {"ticker": "NVDA", "origin": "Sunil", "qty": -100, "entry_price": 6.25},
-            ]
-        },
-    )
-    assert second.status_code == 200
-    trades = second.json()["option_trades"]
-    assert len(trades) == 1
-    assert trades[0]["ticker"] == "NVDA"
+        second = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "NVDA", "origin": "Sunil", "contracts": -1, "entry_price": 6.25},
+                ]
+            },
+        )
+        assert second.status_code == 200
+        trades = second.json()["option_trades"]
+        assert len(trades) == 1
+        assert trades[0]["ticker"] == "NVDA"
 
 
 def test_computed_fields_match_formulas(client):
     expiration = date.today() + timedelta(days=30)
-    response = client.post(
-        "/api/options-trades",
-        json={
-            "option_trades": [
-                {
-                    "ticker": "NVDA",
-                    "origin": "Sunil",
-                    "expiration_date": expiration.isoformat(),
-                    "qty": -100,
-                    "entry_price": 6.25,
-                },
-            ]
-        },
-    )
+    with patch("backend.api.options_trades.fetch_option_price", return_value=8.0):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {
+                        "ticker": "NVDA",
+                        "origin": "Sunil",
+                        "option_type": "put",
+                        "expiration_date": expiration.isoformat(),
+                        "strike": 100,
+                        "contracts": -1,
+                        "entry_price": 6.25,
+                        "rolls_credit": 2.0,
+                        "fees": 1.0,
+                        "buying_power": 10000.0,
+                    },
+                ]
+            },
+        )
 
     row = response.json()["option_trades"][0]
-    assert row["entry_value"] == -100 * 6.25
+    entry_value = -1 * 6.25 * 100
+    pl_open = (8.0 - 6.25) * 100 * -1
+    total_pl = pl_open + 2.0 - 1.0
+    assert row["entry_value"] == entry_value
     assert row["remaining_dte"] == 30
+    assert row["current_price"] == 8.0
+    assert row["pl_open"] == pl_open
+    assert row["pct_pl"] == pl_open / entry_value
+    assert row["total_pl"] == total_pl
+    assert row["roi"] == total_pl / 10000.0
+
+
+def test_pct_pl_and_roi_default_to_zero_when_denominator_is_zero(client):
+    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "NVDA", "origin": "Sunil", "contracts": 0, "entry_price": 0},
+                ]
+            },
+        )
+
+    row = response.json()["option_trades"][0]
+    assert row["pct_pl"] == 0.0
+    assert row["roi"] == 0.0
 
 
 def test_blank_expiration_date_defaults_dte_to_zero(client):
-    response = client.post(
-        "/api/options-trades",
-        json={
-            "option_trades": [
-                {"ticker": "NVDA", "origin": "Sunil", "qty": -100, "entry_price": 6.25},
-            ]
-        },
-    )
+    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "NVDA", "origin": "Sunil", "contracts": -1, "entry_price": 6.25},
+                ]
+            },
+        )
 
     row = response.json()["option_trades"][0]
     assert row["remaining_dte"] == 0
 
 
 def test_empty_ticker_rows_are_dropped(client):
-    response = client.post(
-        "/api/options-trades",
-        json={
-            "option_trades": [
-                {"ticker": "", "origin": "No Ticker"},
-                {"ticker": "   ", "origin": "Blank Ticker"},
-                {"ticker": "AAPL", "origin": "Valid"},
-            ]
-        },
-    )
+    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "", "origin": "No Ticker"},
+                    {"ticker": "   ", "origin": "Blank Ticker"},
+                    {"ticker": "AAPL", "origin": "Valid"},
+                ]
+            },
+        )
 
     trades = response.json()["option_trades"]
     assert len(trades) == 1
     assert trades[0]["ticker"] == "AAPL"
+
+
+def test_option_price_fetch_failure_falls_back_to_zero(client):
+    with patch("backend.api.options_trades.fetch_option_price", return_value=0.0):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                ]
+            },
+        )
+
+    row = response.json()["option_trades"][0]
+    assert row["current_price"] == 0.0

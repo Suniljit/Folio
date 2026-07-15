@@ -25,6 +25,7 @@ export function makeOptionTrade(overrides: Partial<OptionTrade> = {}): OptionTra
     open_date: "2026-06-23",
     ticker: "NVDA",
     strategy: "CSP",
+    option_type: "put",
     expiration_date: "2026-07-31",
     buying_power: 2832,
     buy_price: 625,
@@ -33,9 +34,14 @@ export function makeOptionTrade(overrides: Partial<OptionTrade> = {}): OptionTra
     last_trade_date: "2026-07-31",
     strike: 195,
     entry_price: 6.25,
-    qty: -100,
+    contracts: -1,
     entry_value: -625,
     remaining_dte: 17,
+    current_price: 5.5,
+    pl_open: 75,
+    pct_pl: -0.12,
+    total_pl: 74.3,
+    roi: 0.026,
     ...overrides,
   };
 }

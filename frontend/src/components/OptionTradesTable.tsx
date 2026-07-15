@@ -14,6 +14,7 @@ const columnWidths = [
   "100px",
   "80px",
   "110px",
+  "80px",
   "100px",
   "110px",
   "100px",
@@ -22,9 +23,14 @@ const columnWidths = [
   "110px",
   "80px",
   "100px",
-  "70px",
+  "80px",
   "100px",
   "90px",
+  "100px",
+  "100px",
+  "80px",
+  "100px",
+  "80px",
   "70px",
 ];
 
@@ -46,6 +52,7 @@ export function OptionTradesTable({ optionTrades, onEdit, onAddOpen }: OptionTra
             <TableHead className={headerClass}>Open Date</TableHead>
             <TableHead className={headerClass}>Ticker</TableHead>
             <TableHead className={headerClass}>Strategy</TableHead>
+            <TableHead className={headerClass}>Type</TableHead>
             <TableHead className={headerClass}>Expiration</TableHead>
             <TableHead className={headerClass}>Buying Power</TableHead>
             <TableHead className={headerClass}>Buy Price</TableHead>
@@ -54,9 +61,14 @@ export function OptionTradesTable({ optionTrades, onEdit, onAddOpen }: OptionTra
             <TableHead className={headerClass}>Last Trade</TableHead>
             <TableHead className={headerClass}>Strike</TableHead>
             <TableHead className={headerClass}>Entry Price</TableHead>
-            <TableHead className={headerClass}>Qty</TableHead>
+            <TableHead className={headerClass}>Contracts</TableHead>
             <TableHead className={headerClass}>Entry Value</TableHead>
             <TableHead className={headerClass}>Rem. DTE</TableHead>
+            <TableHead className={headerClass}>Current Price</TableHead>
+            <TableHead className={headerClass}>P/L Open</TableHead>
+            <TableHead className={headerClass}>% P/L</TableHead>
+            <TableHead className={headerClass}>Total P/L</TableHead>
+            <TableHead className={headerClass}>ROI</TableHead>
             <TableHead className={headerClass} />
           </TableRow>
         </TableHeader>
