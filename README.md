@@ -5,6 +5,7 @@ A personal portfolio tracker: a FastAPI JSON API backend with a React SPA fronte
 ## Features
 
 - Live stock prices via [yfinance](https://github.com/ranaroussi/yfinance) (auto-refreshes every 30 seconds)
+- Live options mark prices via Interactive Brokers (requires TWS running locally — see [Prerequisites](#prerequisites))
 - Inline editing — click any cell to edit; add or delete rows directly in the table
 - Calculated columns (Current Price, Total Cost, Market Value, Unrealized P&L) update automatically
 - Portfolio summary: total market value, total cost, and total unrealized P&L
@@ -15,6 +16,7 @@ A personal portfolio tracker: a FastAPI JSON API backend with a React SPA fronte
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) for Python dependency management
 - Node.js + npm for the frontend
+- For options pricing: an Interactive Brokers account with Trader Workstation (TWS) or IB Gateway running locally and API access enabled. Without it, the Options Trades tab shows an "IBKR not connected" banner and prices read `0.0`. See [docs/ibkr-tws-setup.md](docs/ibkr-tws-setup.md) for setup and [.env.example](.env.example) for connection settings.
 
 ## Quickstart
 
@@ -135,4 +137,4 @@ Frontend (run from `frontend/`):
 
 ## Further reading
 
-See [`INDEX.md`](INDEX.md) for a full map of all documentation.
+See [`INDEX.md`](INDEX.md) for a full map of all documentation, including [docs/ibkr-tws-setup.md](docs/ibkr-tws-setup.md) for IBKR/TWS setup.

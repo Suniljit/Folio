@@ -11,6 +11,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | What data is stored and how? | [docs/data-model.md](docs/data-model.md) |
 | What do each of the columns mean? | [docs/column-reference.md](docs/column-reference.md) |
 | How do I use the UI? | [docs/user-guide.md](docs/user-guide.md) |
+| How do I set up IBKR/TWS for options pricing? | [docs/ibkr-tws-setup.md](docs/ibkr-tws-setup.md) |
 | Why was X built this way? | [docs/adr/](docs/adr/) |
 | What's being built next? | [ROADMAP.md](ROADMAP.md) |
 
@@ -26,6 +27,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`ROADMAP.md`](ROADMAP.md) | Feature roadmap: phases, target DB schema, decisions log |
 | [`INDEX.md`](INDEX.md) | This file — documentation navigation |
 | [`pyproject.toml`](pyproject.toml) | Backend dependencies, ruff/taskipy config |
+| [`.env.example`](.env.example) | Template for local environment variables (data dir, port, IBKR connection) |
 | [`package.json`](package.json) | Electron dependencies, `electron:dev`/`electron:build` scripts |
 | [`electron-builder.yml`](electron-builder.yml) | macOS packaging config (`.dmg` output, `extraResources`) |
 | [`folio-backend.spec`](folio-backend.spec) | PyInstaller spec freezing the backend for packaging |
@@ -72,6 +74,7 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`docs/data-model.md`](docs/data-model.md) | SQLite schema, stored vs. calculated columns, formulas |
 | [`docs/column-reference.md`](docs/column-reference.md) | All 9 display columns: definition, source, editability |
 | [`docs/user-guide.md`](docs/user-guide.md) | Step-by-step UI usage, known limitations |
+| [`docs/ibkr-tws-setup.md`](docs/ibkr-tws-setup.md) | TWS API setup, ports, market-data subscription, troubleshooting for IBKR options pricing |
 
 ### `docs/adr/` — Architectural Decision Records
 
@@ -86,3 +89,5 @@ Navigation guide for all documentation in this repository. Intended for both hum
 | [`docs/adr/007-frontend-framework-revisit.md`](docs/adr/007-frontend-framework-revisit.md) | FastAPI + React/Vite over Streamlit, for pixel-accurate design fidelity — **styling clause superseded by ADR 008** |
 | [`docs/adr/008-adopt-shadcn-tailwind.md`](docs/adr/008-adopt-shadcn-tailwind.md) | Tailwind CSS + shadcn/ui over hand-rolled CSS components |
 | [`docs/adr/009-electron-desktop-packaging.md`](docs/adr/009-electron-desktop-packaging.md) | Electron over Tauri or native Swift, for a packaged macOS app |
+| [`docs/adr/010-options-pricing-source.md`](docs/adr/010-options-pricing-source.md) | yfinance `option_chain()` for options mark price — **superseded by ADR 011** |
+| [`docs/adr/011-ibkr-options-pricing.md`](docs/adr/011-ibkr-options-pricing.md) | IBKR via `ib_async` over yfinance, for live bid/ask options pricing |

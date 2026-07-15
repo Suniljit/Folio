@@ -1,6 +1,9 @@
 # Ignore the database file
 portfolio.db
 
+# Ignore local environment overrides
+.env
+
 # Ignore Python bytecode files
 __pycache__/
 

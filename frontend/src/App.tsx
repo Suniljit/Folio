@@ -36,6 +36,7 @@ export default function App() {
     unrealized_pl: 0,
   });
   const [optionTrades, setOptionTrades] = useState<OptionTrade[]>([]);
+  const [ibkrConnected, setIbkrConnected] = useState(true);
   const [modal, setModal] = useState<ModalState>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
   const modalOpenRef = useRef(modal !== null);
@@ -51,6 +52,7 @@ export default function App() {
 
   const applyOptionTradesResponse = useCallback((response: OptionTradesResponse) => {
     setOptionTrades(withOptionTradeClientKeys(response));
+    setIbkrConnected(response.ibkr_connected);
   }, []);
 
   useEffect(() => {
@@ -200,6 +202,7 @@ export default function App() {
             <h1 className="dashboard-title">Folio</h1>
             <OptionTradesTable
               optionTrades={optionTrades}
+              ibkrConnected={ibkrConnected}
               onEdit={(clientKey) => {
                 const trade = optionTrades.find((t) => t.clientKey === clientKey);
                 if (trade) setModal({ mode: "edit", kind: "trade", trade });

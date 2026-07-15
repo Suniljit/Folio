@@ -1,6 +1,6 @@
 # ADR 010 — Options Pricing Data Source
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 011](011-ibkr-options-pricing.md)
 
 ## Context
 

@@ -5,6 +5,7 @@ import type { OptionTrade } from "../types";
 
 interface OptionTradesTableProps {
   optionTrades: OptionTrade[];
+  ibkrConnected: boolean;
   onEdit: (clientKey: string) => void;
   onAddOpen: () => void;
 }
@@ -37,9 +38,19 @@ const columnWidths = [
 const headerClass =
   "h-auto whitespace-normal px-1 py-3.5 text-[11px] tracking-[0.04em] uppercase text-muted-foreground first:pl-5 last:pr-5";
 
-export function OptionTradesTable({ optionTrades, onEdit, onAddOpen }: OptionTradesTableProps) {
+export function OptionTradesTable({
+  optionTrades,
+  ibkrConnected,
+  onEdit,
+  onAddOpen,
+}: OptionTradesTableProps) {
   return (
     <div className="trades-panel">
+      {!ibkrConnected && (
+        <div className="mb-3 rounded-[10px] border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-2 text-[13px] text-[oklch(0.7_0.14_60)]">
+          IBKR not connected — prices may be stale. Open TWS and make sure the API is enabled.
+        </div>
+      )}
       <Table className="table-fixed">
         <colgroup>
           {columnWidths.map((width, i) => (

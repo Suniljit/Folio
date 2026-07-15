@@ -51,4 +51,5 @@ export interface OptionTrade {
 
 export interface OptionTradesResponse {
   option_trades: Omit<OptionTrade, "clientKey">[];
+  ibkr_connected: boolean;
 }
