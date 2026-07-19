@@ -43,6 +43,7 @@ class OptionTradeIn(BaseModel):
     ticker: str
     strategy: str = ""
     option_type: str = ""
+    direction: str = "short"
     expiration_date: str = ""
     buying_power: float = 0.0
     buy_price: float = 0.0
@@ -65,6 +66,7 @@ class OptionTradeOut(BaseModel):
     ticker: str
     strategy: str
     option_type: str
+    direction: str
     expiration_date: str
     buying_power: float
     buy_price: float

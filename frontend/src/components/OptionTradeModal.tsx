@@ -9,6 +9,7 @@ const emptyForm = {
   ticker: "",
   strategy: "",
   option_type: "",
+  direction: "",
   expiration_date: "",
   buying_power: "",
   buy_price: "",
@@ -27,6 +28,7 @@ type OptionTradeFields = Pick<
   | "ticker"
   | "strategy"
   | "option_type"
+  | "direction"
   | "expiration_date"
   | "buying_power"
   | "buy_price"
@@ -45,6 +47,7 @@ function toForm(values: OptionTradeFields): typeof emptyForm {
     ticker: values.ticker,
     strategy: values.strategy,
     option_type: values.option_type,
+    direction: values.direction,
     expiration_date: values.expiration_date,
     buying_power: String(values.buying_power),
     buy_price: String(values.buy_price),
@@ -105,12 +108,17 @@ export function OptionTradeModal({
       setError("Origin and ticker are required.");
       return;
     }
+    if (!form.direction) {
+      setError("Direction is required.");
+      return;
+    }
     onSubmit({
       origin,
       open_date: form.open_date,
       ticker: ticker.toUpperCase(),
       strategy: form.strategy.trim(),
       option_type: form.option_type,
+      direction: form.direction,
       expiration_date: form.expiration_date,
       buying_power: parseFloat(form.buying_power) || 0,
       buy_price: parseFloat(form.buy_price) || 0,
@@ -119,7 +127,7 @@ export function OptionTradeModal({
       last_trade_date: form.last_trade_date,
       strike: parseFloat(form.strike) || 0,
       entry_price: parseFloat(form.entry_price) || 0,
-      contracts: parseFloat(form.contracts) || 0,
+      contracts: Math.abs(parseFloat(form.contracts) || 0),
     });
     setForm(emptyForm);
     setError("");
@@ -224,6 +232,21 @@ export function OptionTradeModal({
                   </select>
                 </div>
                 <div className="modal-field">
+                  <label className="modal-field-label">Direction</label>
+                  <select
+                    className="modal-input"
+                    value={form.direction}
+                    onChange={(e) => setField("direction", e.target.value)}
+                  >
+                    <option value="">—</option>
+                    <option value="long">Long (Buy)</option>
+                    <option value="short">Short (Sell)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-field-row">
+                <div className="modal-field">
                   <label className="modal-field-label">Open Date</label>
                   <input
                     type="date"
@@ -232,9 +255,6 @@ export function OptionTradeModal({
                     onChange={(e) => setField("open_date", e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div className="modal-field-row">
                 <div className="modal-field">
                   <label className="modal-field-label">Expiration</label>
                   <input
@@ -244,6 +264,9 @@ export function OptionTradeModal({
                     onChange={(e) => setField("expiration_date", e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="modal-field-row">
                 <div className="modal-field">
                   <label className="modal-field-label">Last Trade Date</label>
                   <input

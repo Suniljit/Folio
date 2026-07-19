@@ -16,6 +16,7 @@ export function OptionTradeRow({ trade, onEdit }: OptionTradeRowProps) {
       <TableCell className="px-1 py-2">{trade.ticker}</TableCell>
       <TableCell className="px-1 py-2">{trade.strategy}</TableCell>
       <TableCell className="px-1 py-2">{trade.option_type}</TableCell>
+      <TableCell className="px-1 py-2 capitalize">{trade.direction}</TableCell>
       <TableCell className="px-1 py-2">{trade.expiration_date}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.buying_power)}</TableCell>
       <TableCell className="px-1 py-2">{fmtUSD(trade.buy_price)}</TableCell>

@@ -15,8 +15,8 @@ def test_post_option_trades_full_replace(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
-                    {"ticker": "MSFT", "origin": "Adam", "contracts": -1, "entry_price": 9.75},
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": 1, "entry_price": 5},
+                    {"ticker": "MSFT", "origin": "Adam", "contracts": 1, "entry_price": 9.75},
                 ]
             },
         )
@@ -27,7 +27,7 @@ def test_post_option_trades_full_replace(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "NVDA", "origin": "Sunil", "contracts": -1, "entry_price": 6.25},
+                    {"ticker": "NVDA", "origin": "Sunil", "contracts": 1, "entry_price": 6.25},
                 ]
             },
         )
@@ -37,7 +37,7 @@ def test_post_option_trades_full_replace(client):
         assert trades[0]["ticker"] == "NVDA"
 
 
-def test_computed_fields_match_formulas(client):
+def test_computed_fields_match_formulas_for_short(client):
     expiration = date.today() + timedelta(days=30)
     with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=8.0)):
         response = client.post(
@@ -48,9 +48,10 @@ def test_computed_fields_match_formulas(client):
                         "ticker": "NVDA",
                         "origin": "Sunil",
                         "option_type": "put",
+                        "direction": "short",
                         "expiration_date": expiration.isoformat(),
                         "strike": 100,
-                        "contracts": -1,
+                        "contracts": 1,
                         "entry_price": 6.25,
                         "rolls_credit": 2.0,
                         "fees": 1.0,
@@ -61,12 +62,47 @@ def test_computed_fields_match_formulas(client):
         )
 
     row = response.json()["option_trades"][0]
-    entry_value = -1 * 6.25 * 100
-    pl_open = (8.0 - 6.25) * 100 * -1
+    entry_value = 1 * 6.25 * 100
+    pl_open = (6.25 - 8.0) * 100 * 1
     total_pl = pl_open + 2.0 - 1.0
     assert row["entry_value"] == entry_value
     assert row["remaining_dte"] == 30
     assert row["current_price"] == 8.0
+    assert row["pl_open"] == pl_open
+    assert row["pct_pl"] == pl_open / entry_value
+    assert row["total_pl"] == total_pl
+    assert row["roi"] == total_pl / 10000.0
+
+
+def test_computed_fields_match_formulas_for_long(client):
+    expiration = date.today() + timedelta(days=30)
+    with patch("backend.api.options_trades.fetch_option_mark", new=AsyncMock(return_value=8.0)):
+        response = client.post(
+            "/api/options-trades",
+            json={
+                "option_trades": [
+                    {
+                        "ticker": "NVDA",
+                        "origin": "Sunil",
+                        "option_type": "call",
+                        "direction": "long",
+                        "expiration_date": expiration.isoformat(),
+                        "strike": 100,
+                        "contracts": 1,
+                        "entry_price": 6.25,
+                        "rolls_credit": 2.0,
+                        "fees": 1.0,
+                        "buying_power": 10000.0,
+                    },
+                ]
+            },
+        )
+
+    row = response.json()["option_trades"][0]
+    entry_value = 1 * 6.25 * 100
+    pl_open = (8.0 - 6.25) * 100 * 1
+    total_pl = pl_open + 2.0 - 1.0
+    assert row["entry_value"] == entry_value
     assert row["pl_open"] == pl_open
     assert row["pct_pl"] == pl_open / entry_value
     assert row["total_pl"] == total_pl
@@ -95,7 +131,7 @@ def test_blank_expiration_date_defaults_dte_to_zero(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "NVDA", "origin": "Sunil", "contracts": -1, "entry_price": 6.25},
+                    {"ticker": "NVDA", "origin": "Sunil", "contracts": 1, "entry_price": 6.25},
                 ]
             },
         )
@@ -128,7 +164,7 @@ def test_option_price_fetch_failure_falls_back_to_zero(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": 1, "entry_price": 5},
                 ]
             },
         )
@@ -146,7 +182,7 @@ def test_ibkr_unreachable_falls_back_to_zero_and_flags_disconnected(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": 1, "entry_price": 5},
                 ]
             },
         )
@@ -165,7 +201,7 @@ def test_ibkr_connected_flag_true_when_connection_succeeds(client):
             "/api/options-trades",
             json={
                 "option_trades": [
-                    {"ticker": "AAPL", "origin": "Sunil", "contracts": -1, "entry_price": 5},
+                    {"ticker": "AAPL", "origin": "Sunil", "contracts": 1, "entry_price": 5},
                 ]
             },
         )

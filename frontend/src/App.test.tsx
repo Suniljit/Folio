@@ -46,6 +46,7 @@ function tradeResponse(
     ticker: "NVDA",
     strategy: "CSP",
     option_type: "put",
+    direction: "short",
     expiration_date: "2026-07-31",
     buying_power: 2832,
     buy_price: 625,
@@ -54,12 +55,12 @@ function tradeResponse(
     last_trade_date: "2026-07-31",
     strike: 195,
     entry_price: 6.25,
-    contracts: -1,
-    entry_value: -625,
+    contracts: 1,
+    entry_value: 625,
     remaining_dte: 17,
     current_price: 5.5,
     pl_open: 75,
-    pct_pl: -0.12,
+    pct_pl: 0.12,
     total_pl: 74.3,
     roi: 0.026,
     ...overrides,
@@ -217,6 +218,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /\+ add trade/i }));
     await user.type(screen.getByPlaceholderText("e.g. Sunil"), "Adam");
     await user.type(screen.getByPlaceholderText("AAPL"), "msft");
+    await user.selectOptions(screen.getAllByRole("combobox")[1], "short");
     await user.click(screen.getByRole("button", { name: "Add Trade" }));
 
     await waitFor(() => expect(mockedSaveOptionTrades).toHaveBeenCalledTimes(1));

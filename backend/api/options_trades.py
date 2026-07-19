@@ -47,7 +47,10 @@ async def _build_response(trades: list[OptionTrade]) -> OptionTradesResponse:
             t.ticker, t.expiration_date, t.strike, t.option_type
         )
         current_price = current_price if current_price is not None else 0.0
-        pl_open = (current_price - t.entry_price) * 100 * t.contracts
+        if t.direction == "short":
+            pl_open = (t.entry_price - current_price) * 100 * t.contracts
+        else:
+            pl_open = (current_price - t.entry_price) * 100 * t.contracts
         pct_pl = pl_open / entry_value if entry_value != 0 else 0.0
         total_pl = pl_open + t.rolls_credit - t.fees
         roi = total_pl / t.buying_power if t.buying_power != 0 else 0.0
@@ -60,6 +63,7 @@ async def _build_response(trades: list[OptionTrade]) -> OptionTradesResponse:
                 ticker=t.ticker,
                 strategy=t.strategy,
                 option_type=t.option_type,
+                direction=t.direction,
                 expiration_date=t.expiration_date,
                 buying_power=t.buying_power,
                 buy_price=t.buy_price,
@@ -96,6 +100,7 @@ async def write_option_trades(payload: OptionTradesSaveRequest) -> OptionTradesR
             ticker=t.ticker.strip().upper(),
             strategy=t.strategy,
             option_type=t.option_type,
+            direction=t.direction,
             expiration_date=t.expiration_date,
             buying_power=t.buying_power,
             buy_price=t.buy_price,
@@ -104,7 +109,7 @@ async def write_option_trades(payload: OptionTradesSaveRequest) -> OptionTradesR
             last_trade_date=t.last_trade_date,
             strike=t.strike,
             entry_price=t.entry_price,
-            contracts=t.contracts,
+            contracts=abs(t.contracts),
         )
         for t in payload.option_trades
         if t.ticker.strip()

@@ -97,6 +97,7 @@ class OptionTrade(SQLModel, table=True):
     ticker: str
     strategy: str = Field(default="")
     option_type: str = Field(default="")
+    direction: str = Field(default="short")
     expiration_date: str = Field(default="")
     buying_power: float = Field(default=0.0)
     buy_price: float = Field(default=0.0)
@@ -119,6 +120,7 @@ All fields above are manual entry. `current_price` (and everything derived from 
 | `ticker` | Yes | Yes | User input; normalised to uppercase on save |
 | `strategy` | Yes | Yes | User input |
 | `option_type` | Yes | Yes | User input; `"call"` or `"put"` |
+| `direction` | Yes | Yes | User input; `"long"` or `"short"` — see [ADR 012](adr/012-option-trade-direction.md) |
 | `expiration_date` | Yes | Yes | User input |
 | `buying_power` | Yes | Yes | User input |
 | `buy_price` | Yes | Yes | User input (debit) |
@@ -127,7 +129,7 @@ All fields above are manual entry. `current_price` (and everything derived from 
 | `last_trade_date` | Yes | Yes | User input |
 | `strike` | Yes | Yes | User input |
 | `entry_price` | Yes | Yes | User input |
-| `contracts` | Yes | Yes | User input; signed (negative for short positions) |
+| `contracts` | Yes | Yes | User input; positive magnitude only — `direction` carries the sign |
 | `entry_value` | **No** | No | `contracts × entry_price × 100` |
 | `remaining_dte` | **No** | No | `expiration_date − today` (days) |
 | `current_price` | **No** | No | yfinance `option_chain()` mark (`lastPrice`), cached 30s |
@@ -141,14 +143,15 @@ All fields above are manual entry. `current_price` (and everything derived from 
 ```
 entry_value    = contracts × entry_price × 100
 remaining_dte  = (expiration_date − today).days
-current_price  = yfinance option_chain mark (lastPrice), cached 30s, 0.0 on failure
-pl_open        = (current_price − entry_price) × 100 × contracts
+current_price  = IBKR bid/ask midpoint, cached 30s, 0.0 on failure (see ADR 011)
+pl_open        = (current_price − entry_price) × 100 × contracts   [direction == "long"]
+               = (entry_price − current_price) × 100 × contracts   [direction == "short"]
 pct_pl         = pl_open / entry_value                 (0 if entry_value == 0)
 total_pl       = pl_open + rolls_credit − fees
 roi            = total_pl / buying_power                (0 if buying_power == 0)
 ```
 
-The `× 100` factor is the standard 100-shares-per-contract multiplier; `contracts` is the signed count of contracts (negative for short positions), so `entry_value` and `pl_open` stay on the same dollar scale and `pct_pl` comes out as a normal percentage.
+The `× 100` factor is the standard 100-shares-per-contract multiplier. `contracts` is always a positive magnitude; `direction` is the sole source of sign in `pl_open` — see [ADR 012](adr/012-option-trade-direction.md). `entry_price` is always entered as a positive premium (paid for `long`, received for `short`), so `entry_value` stays positive and `pct_pl` reads as "% of cost recovered" for `long` or "% of premium collected" for `short`.
 
 ### Save behaviour
 
