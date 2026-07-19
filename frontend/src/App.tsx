@@ -6,6 +6,7 @@ import { HoldingModal } from "./components/HoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
 import { OptionTradeModal } from "./components/OptionTradeModal";
 import { OptionTradesTable } from "./components/OptionTradesTable";
+import { PageHeader } from "./components/PageHeader";
 import { StatCards } from "./components/StatCards";
 import { TabDock, type Tab } from "./components/TabDock";
 import { Toaster } from "./components/ui/sonner";
@@ -185,7 +186,7 @@ export default function App() {
           </div>
         ) : tab === "holdings" ? (
           <div className="dashboard-body dashboard-body-with-dock">
-            <h1 className="dashboard-title">Folio</h1>
+            <PageHeader />
             <StatCards totals={totals} />
             <div className="refresh-caption">Prices refresh every 30s.</div>
             <HoldingsTable
@@ -199,7 +200,7 @@ export default function App() {
           </div>
         ) : (
           <div className="dashboard-body dashboard-body-with-dock">
-            <h1 className="dashboard-title">Folio</h1>
+            <PageHeader />
             <OptionTradesTable
               optionTrades={optionTrades}
               ibkrConnected={ibkrConnected}
