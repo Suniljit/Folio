@@ -1,11 +1,11 @@
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from backend.db import get_holdings, save_holdings
+from backend.db import create_holding, delete_holding, get_holdings, update_holding
 from backend.models import Holding
 from backend.prices import fetch_prices
-from backend.schemas import HoldingOut, HoldingsResponse, HoldingsSaveRequest, Totals
+from backend.schemas import HoldingIn, HoldingOut, HoldingsResponse, Totals
 
 router = APIRouter(prefix="/api/holdings", tags=["holdings"])
 
@@ -24,35 +24,32 @@ def _cached_prices(tickers: list[str]) -> dict[str, float]:
     return prices
 
 
+def _to_out(h: Holding, current_price: float) -> HoldingOut:
+    assert h.id is not None
+    total_cost = h.avg_price * h.shares_owned + h.fees
+    market_value = h.shares_owned * current_price
+    unrealized_pl = market_value - total_cost
+    return HoldingOut(
+        id=h.id,
+        company_name=h.company_name,
+        ticker=h.ticker,
+        shares_owned=h.shares_owned,
+        avg_price=h.avg_price,
+        fees=h.fees,
+        current_price=current_price,
+        total_cost=total_cost,
+        market_value=market_value,
+        unrealized_pl=unrealized_pl,
+    )
+
+
 def _build_response(holdings: list[Holding]) -> HoldingsResponse:
-    tickers = list({h.ticker.upper() for h in holdings if h.ticker.strip()})
+    tickers = list({h.ticker.upper() for h in holdings})
     prices = _cached_prices(tickers)
 
-    rows: list[HoldingOut] = []
-    total_market_value = 0.0
-    total_cost_sum = 0.0
-    for h in holdings:
-        assert h.id is not None
-        current_price = prices.get(h.ticker.upper(), 0.0)
-        total_cost = h.avg_price * h.shares_owned + h.fees
-        market_value = h.shares_owned * current_price
-        unrealized_pl = market_value - total_cost
-        rows.append(
-            HoldingOut(
-                id=h.id,
-                company_name=h.company_name,
-                ticker=h.ticker,
-                shares_owned=h.shares_owned,
-                avg_price=h.avg_price,
-                fees=h.fees,
-                current_price=current_price,
-                total_cost=total_cost,
-                market_value=market_value,
-                unrealized_pl=unrealized_pl,
-            )
-        )
-        total_market_value += market_value
-        total_cost_sum += total_cost
+    rows = [_to_out(h, prices.get(h.ticker.upper(), 0.0)) for h in holdings]
+    total_market_value = sum(r.market_value for r in rows)
+    total_cost_sum = sum(r.total_cost for r in rows)
 
     return HoldingsResponse(
         holdings=rows,
@@ -64,24 +61,41 @@ def _build_response(holdings: list[Holding]) -> HoldingsResponse:
     )
 
 
+def _to_model(payload: HoldingIn) -> Holding:
+    return Holding(
+        company_name=payload.company_name,
+        ticker=payload.ticker,
+        shares_owned=payload.shares_owned,
+        avg_price=payload.avg_price,
+        fees=payload.fees,
+    )
+
+
 @router.get("", response_model=HoldingsResponse)
 def read_holdings() -> HoldingsResponse:
     return _build_response(get_holdings())
 
 
-@router.post("", response_model=HoldingsResponse)
-def write_holdings(payload: HoldingsSaveRequest) -> HoldingsResponse:
-    rows = [
-        Holding(
-            company_name=h.company_name,
-            ticker=h.ticker.strip().upper(),
-            shares_owned=h.shares_owned,
-            avg_price=h.avg_price,
-            fees=h.fees,
-        )
-        for h in payload.holdings
-        if h.ticker.strip()
-    ]
-    save_holdings(rows)
+@router.post("", response_model=HoldingOut, status_code=201)
+def create_holding_endpoint(payload: HoldingIn) -> HoldingOut:
+    row = create_holding(_to_model(payload))
     _price_cache.clear()
-    return _build_response(get_holdings())
+    prices = _cached_prices([row.ticker.upper()])
+    return _to_out(row, prices.get(row.ticker.upper(), 0.0))
+
+
+@router.put("/{holding_id}", response_model=HoldingOut)
+def update_holding_endpoint(holding_id: int, payload: HoldingIn) -> HoldingOut:
+    row = update_holding(holding_id, _to_model(payload))
+    if row is None:
+        raise HTTPException(status_code=404, detail="Holding not found")
+    _price_cache.clear()
+    prices = _cached_prices([row.ticker.upper()])
+    return _to_out(row, prices.get(row.ticker.upper(), 0.0))
+
+
+@router.delete("/{holding_id}", status_code=204)
+def delete_holding_endpoint(holding_id: int) -> None:
+    if not delete_holding(holding_id):
+        raise HTTPException(status_code=404, detail="Holding not found")
+    _price_cache.clear()

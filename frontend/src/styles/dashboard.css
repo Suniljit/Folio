@@ -155,6 +155,15 @@
   color: var(--color-negative);
 }
 
+.modal-input-invalid {
+  border-color: var(--color-negative);
+}
+
+.modal-field-error {
+  font-size: 11.5px;
+  color: var(--color-negative);
+}
+
 /* Dashboard view */
 
 .dashboard-header-row {

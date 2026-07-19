@@ -1,6 +1,6 @@
 # ADR 005 — Save Strategy
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 013](013-per-item-crud-and-field-validation.md) (save mechanics only)
 
 ## Context
 

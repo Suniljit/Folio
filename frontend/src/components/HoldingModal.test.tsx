@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { ValidationError } from "../api";
 import { HoldingModal } from "./HoldingModal";
 
 describe("HoldingModal", () => {
@@ -20,20 +21,57 @@ describe("HoldingModal", () => {
       expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
     });
 
-    it("shows a validation error and does not submit when company or ticker is blank", async () => {
+    it("shows per-field validation errors and does not submit when required fields are blank", async () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
       render(<HoldingModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       await user.click(screen.getByRole("button", { name: "Add Holding" }));
 
-      expect(screen.getByText("Company and ticker are required.")).toBeInTheDocument();
+      expect(screen.getByText("Company name is required.")).toBeInTheDocument();
+      expect(screen.getByText("Ticker must be 1-5 uppercase letters.")).toBeInTheDocument();
+      expect(screen.getByText("Shares owned must be greater than 0.")).toBeInTheDocument();
+      expect(screen.getByText("Average price must be greater than 0.")).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it("rejects a zero shares_owned even when other fields are valid", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(<HoldingModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await user.type(screen.getByPlaceholderText("e.g. Apple"), "Apple");
+      await user.type(screen.getByPlaceholderText("AAPL"), "AAPL");
+      const priceInputs = screen.getAllByPlaceholderText("0.00");
+      await user.type(priceInputs[0], "150");
+
+      await user.click(screen.getByRole("button", { name: "Add Holding" }));
+
+      expect(screen.getByText("Shares owned must be greater than 0.")).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it("rejects a negative fees value", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(<HoldingModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await user.type(screen.getByPlaceholderText("e.g. Apple"), "Apple");
+      await user.type(screen.getByPlaceholderText("AAPL"), "AAPL");
+      await user.type(screen.getByPlaceholderText("0"), "10");
+      const priceInputs = screen.getAllByPlaceholderText("0.00");
+      await user.type(priceInputs[0], "150");
+      await user.type(priceInputs[1], "-1");
+
+      await user.click(screen.getByRole("button", { name: "Add Holding" }));
+
+      expect(screen.getByText("Fees cannot be negative.")).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
     });
 
     it("submits a fully-populated row and clears the form", async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(<HoldingModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       await user.type(screen.getByPlaceholderText("e.g. Apple"), "Apple");
@@ -52,6 +90,24 @@ describe("HoldingModal", () => {
         avg_price: 150,
         fees: 1.5,
       });
+    });
+
+    it("shows server-side field errors returned from a failed submit", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi
+        .fn()
+        .mockRejectedValue(new ValidationError({ ticker: "Ticker must be 1-5 uppercase letters" }));
+      render(<HoldingModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await user.type(screen.getByPlaceholderText("e.g. Apple"), "Apple");
+      await user.type(screen.getByPlaceholderText("AAPL"), "AAPL");
+      await user.type(screen.getByPlaceholderText("0"), "10");
+      const priceInputs = screen.getAllByPlaceholderText("0.00");
+      await user.type(priceInputs[0], "150");
+
+      await user.click(screen.getByRole("button", { name: "Add Holding" }));
+
+      expect(await screen.findByText("Ticker must be 1-5 uppercase letters")).toBeInTheDocument();
     });
 
     it("closes without submitting when Cancel is clicked", async () => {
@@ -114,7 +170,7 @@ describe("HoldingModal", () => {
 
     it("submits updated fields", async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(
         <HoldingModal
           open
