@@ -1,6 +1,6 @@
 import { Card, CardContent } from "./ui/card";
 import { DashboardHoldingsTable } from "./DashboardHoldingsTable";
-import { nyseOpen, useClockTick, zoneTime } from "../hooks/useClock";
+import { PageHeader } from "./PageHeader";
 import { fmtPL, fmtUSD } from "../format";
 import type { Holding, Totals } from "../types";
 
@@ -21,30 +21,12 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ totals, holdings }: DashboardViewProps) {
-  const now = useClockTick();
-  const isOpen = nyseOpen(now);
   const portfolioPlClass = totals.unrealized_pl >= 0 ? "positive" : "negative";
   const optionsPlClass = mockOptions.optionsPl >= 0 ? "positive" : "negative";
 
   return (
     <>
-      <div className="dashboard-header-row">
-        <h1 className="dashboard-title">Folio</h1>
-        <div className="clock-chips">
-          <div className="clock-chip">
-            <span className="clock-chip-label">Singapore</span>
-            <span className="clock-chip-time">{zoneTime(now, "Asia/Singapore")}</span>
-          </div>
-          <div className="clock-chip">
-            <span className="clock-chip-label">NYSE</span>
-            <span className="clock-chip-time">{zoneTime(now, "America/New_York")}</span>
-            <span className={`market-status ${isOpen ? "open" : "closed"}`}>
-              <span className="market-status-dot" />
-              {isOpen ? "Market Open" : "Market Closed"}
-            </span>
-          </div>
-        </div>
-      </div>
+      <PageHeader />
 
       <div className="dashboard-section">
         <span className="dashboard-section-label">Portfolio</span>

@@ -186,10 +186,22 @@
   color: var(--color-muted);
 }
 
+.clock-chip-values {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .clock-chip-time {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-chip-date {
+  font-size: 11px;
+  color: var(--color-muted);
   font-variant-numeric: tabular-nums;
 }
 
