@@ -16,6 +16,7 @@ const columnWidths = [
   "80px",
   "110px",
   "80px",
+  "80px",
   "100px",
   "110px",
   "100px",
@@ -64,6 +65,7 @@ export function OptionTradesTable({
             <TableHead className={headerClass}>Ticker</TableHead>
             <TableHead className={headerClass}>Strategy</TableHead>
             <TableHead className={headerClass}>Type</TableHead>
+            <TableHead className={headerClass}>Direction</TableHead>
             <TableHead className={headerClass}>Expiration</TableHead>
             <TableHead className={headerClass}>Buying Power</TableHead>
             <TableHead className={headerClass}>Buy Price</TableHead>

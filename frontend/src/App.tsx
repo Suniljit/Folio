@@ -122,6 +122,7 @@ export default function App() {
     | "ticker"
     | "strategy"
     | "option_type"
+    | "direction"
     | "expiration_date"
     | "buying_power"
     | "buy_price"

@@ -23,6 +23,7 @@ class OptionTrade(SQLModel, table=True):
     ticker: str
     strategy: str = Field(default="")
     option_type: str = Field(default="")
+    direction: str = Field(default="short")
     expiration_date: str = Field(default="")
     buying_power: float = Field(default=0.0)
     buy_price: float = Field(default=0.0)

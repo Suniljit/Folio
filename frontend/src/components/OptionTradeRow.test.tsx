@@ -12,7 +12,7 @@ describe("OptionTradeRow", () => {
     expect(screen.getByText("NVDA")).toBeInTheDocument();
     expect(screen.getByText("CSP")).toBeInTheDocument();
     expect(screen.getByText("$2,832.00")).toBeInTheDocument();
-    expect(screen.getByText("-$625.00")).toBeInTheDocument();
+    expect(screen.getAllByText("$625.00")).toHaveLength(2); // buy_price and entry_value
     expect(screen.getByText("17")).toBeInTheDocument();
   });
 

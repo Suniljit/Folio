@@ -41,6 +41,7 @@ export async function saveOptionTrades(trades: OptionTrade[]): Promise<OptionTra
         ticker: t.ticker,
         strategy: t.strategy,
         option_type: t.option_type,
+        direction: t.direction,
         expiration_date: t.expiration_date,
         buying_power: t.buying_power,
         buy_price: t.buy_price,

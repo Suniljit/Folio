@@ -31,6 +31,7 @@ export interface OptionTrade {
   ticker: string;
   strategy: string;
   option_type: string;
+  direction: string;
   expiration_date: string;
   buying_power: number;
   buy_price: number;
