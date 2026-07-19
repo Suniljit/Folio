@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Supersedes:** [ADR 001](001-frontend-framework.md)
+**Amended by:** [ADR 013](013-per-item-crud-and-field-validation.md) — the "unsaved edits are cleared on refresh" behavior described in Consequences below no longer matches the code; see the amendment note at the end of this document.
 
 ## Context
 
@@ -37,3 +38,7 @@ Server-rendered HTML with HTMX handling inline edits/add/delete/save via partial
 - **Auto-refresh mechanism changed but its semantics are preserved.** `streamlit-autorefresh` (ADR 004) is replaced by a `setInterval` in the React frontend that polls `GET /api/holdings` every 30 seconds. The 30-second interval and the "unsaved edits are cleared on refresh" behavior (ADR 005) are unchanged — the frontend tracks a `draftHoldings` (working copy) and `savedHoldings` (last server response) state pair, and on each poll tick, if they differ, the draft is discarded in favor of the fresh server response and a toast is shown ("Refreshed — unsaved edits cleared"). This is a client-side reimplementation of the same discard-on-refresh contract, not a new decision — ADR 004 and ADR 005 remain the record of *why* that contract exists.
 - `pandas` is no longer a dependency — it was only used in `app.py` to build the `st.data_editor` DataFrame; the API layer computes and serializes rows directly as Pydantic models.
 - ADR-002 (SQLite), ADR-003 (yfinance), ADR-005 (save strategy), and ADR-006 (SQLModel/Alembic) are unaffected by this change — only the frontend/API boundary changed.
+
+## Amendment (see ADR 013)
+
+The second Consequences bullet above no longer reflects the code and should not be relied on. At some point the `draftHoldings`/`savedHoldings` split and the "unsaved edits cleared" discard toast were removed in favor of a single `holdings`/`optionTrades` state array; the poll now simply skips entirely while a modal is open, so there is no draft to discard. This drift was never recorded as its own decision — it's noted here rather than silently rewriting the history above. Current behavior is documented in `CLAUDE.md` and in [ADR 013](013-per-item-crud-and-field-validation.md), which also moved saves from the full-list-replace `POST /api/holdings` described above to per-item REST endpoints (superseding ADR 005's save mechanics, not this ADR's frontend/API framework choice).

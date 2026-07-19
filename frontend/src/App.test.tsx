@@ -1,19 +1,24 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import * as api from "./api";
-import type { HoldingsResponse, OptionTradesResponse } from "./types";
+import type { Holding, HoldingsResponse, OptionTrade, OptionTradesResponse } from "./types";
 
 vi.mock("./api");
 
 const mockedGetHoldings = vi.mocked(api.getHoldings);
-const mockedSaveHoldings = vi.mocked(api.saveHoldings);
+const mockedCreateHolding = vi.mocked(api.createHolding);
+const mockedUpdateHolding = vi.mocked(api.updateHolding);
+const mockedDeleteHolding = vi.mocked(api.deleteHolding);
 const mockedGetOptionTrades = vi.mocked(api.getOptionTrades);
-const mockedSaveOptionTrades = vi.mocked(api.saveOptionTrades);
+const mockedCreateOptionTrade = vi.mocked(api.createOptionTrade);
+const mockedDeleteOptionTrade = vi.mocked(api.deleteOptionTrade);
 
-function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {}): HoldingsResponse {
-  const holding = {
+function holdingRow(
+  overrides: Partial<Omit<Holding, "clientKey">> = {},
+): Omit<Holding, "clientKey"> {
+  return {
     id: 1,
     company_name: "Apple",
     ticker: "AAPL",
@@ -26,6 +31,10 @@ function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {})
     unrealized_pl: 2304.9,
     ...overrides,
   };
+}
+
+function response(overrides: Partial<Omit<Holding, "clientKey">> = {}): HoldingsResponse {
+  const holding = holdingRow(overrides);
   return {
     holdings: [holding],
     totals: {
@@ -36,10 +45,10 @@ function response(overrides: Partial<HoldingsResponse["holdings"][number]> = {})
   };
 }
 
-function tradeResponse(
-  overrides: Partial<OptionTradesResponse["option_trades"][number]> = {},
-): OptionTradesResponse {
-  const trade = {
+function tradeRow(
+  overrides: Partial<Omit<OptionTrade, "clientKey">> = {},
+): Omit<OptionTrade, "clientKey"> {
+  return {
     id: 1,
     origin: "Sunil",
     open_date: "2026-06-23",
@@ -65,7 +74,26 @@ function tradeResponse(
     roi: 0.026,
     ...overrides,
   };
-  return { option_trades: [trade], ibkr_connected: true };
+}
+
+function tradeResponse(
+  overrides: Partial<Omit<OptionTrade, "clientKey">> = {},
+): OptionTradesResponse {
+  return { option_trades: [tradeRow(overrides)], ibkr_connected: true };
+}
+
+async function fillRequiredTradeFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByPlaceholderText("e.g. CSP"), "CSP");
+  await user.type(screen.getByPlaceholderText("0"), "1");
+  await user.selectOptions(screen.getAllByRole("combobox")[0], "put");
+  const priceInputs = screen.getAllByPlaceholderText("0.00");
+  await user.type(priceInputs[0], "195");
+  await user.type(priceInputs[1], "6.25");
+  await user.type(priceInputs[2], "6.25");
+  await user.type(priceInputs[3], "10000");
+  const dateInputs = document.body.querySelectorAll('input[type="date"]');
+  fireEvent.change(dateInputs[0], { target: { value: "2026-06-23" } });
+  fireEvent.change(dateInputs[1], { target: { value: "2026-07-31" } });
 }
 
 describe("App", () => {
@@ -95,8 +123,8 @@ describe("App", () => {
 
   it("adds a holding via the Add Holding modal and saves immediately", async () => {
     const user = userEvent.setup();
-    mockedSaveHoldings.mockResolvedValue(
-      response({ id: 2, company_name: "Microsoft", ticker: "MSFT" }),
+    mockedCreateHolding.mockResolvedValue(
+      holdingRow({ id: 2, company_name: "Microsoft", ticker: "MSFT" }),
     );
     render(<App />);
 
@@ -106,16 +134,19 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /\+ add holding/i }));
     await user.type(screen.getByPlaceholderText("e.g. Apple"), "Microsoft");
     await user.type(screen.getByPlaceholderText("AAPL"), "msft");
+    await user.type(screen.getByPlaceholderText("0"), "10");
+    const priceInputs = screen.getAllByPlaceholderText("0.00");
+    await user.type(priceInputs[0], "150");
     await user.click(screen.getByRole("button", { name: "Add Holding" }));
 
-    await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedCreateHolding).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Holding added!")).toBeInTheDocument();
     expect(await screen.findByText("Microsoft")).toBeInTheDocument();
   });
 
   it("edits a holding via the Edit modal, pre-filled with its current values", async () => {
     const user = userEvent.setup();
-    mockedSaveHoldings.mockResolvedValue(response({ fees: 9.9 }));
+    mockedUpdateHolding.mockResolvedValue(holdingRow({ fees: 9.9 }));
     render(<App />);
 
     await screen.findByText("AAPL");
@@ -131,16 +162,14 @@ describe("App", () => {
     await user.type(fees, "9.9");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedUpdateHolding).toHaveBeenCalledTimes(1));
+    expect(mockedUpdateHolding).toHaveBeenCalledWith(1, expect.objectContaining({ fees: 9.9 }));
     expect(await screen.findByText("Holding updated!")).toBeInTheDocument();
   });
 
   it("deletes a holding from the Edit modal after confirmation", async () => {
     const user = userEvent.setup();
-    mockedSaveHoldings.mockResolvedValue({
-      holdings: [],
-      totals: { market_value: 0, total_cost: 0, unrealized_pl: 0 },
-    });
+    mockedDeleteHolding.mockResolvedValue(undefined);
     render(<App />);
 
     await screen.findByText("AAPL");
@@ -150,7 +179,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Delete" }));
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
-    await waitFor(() => expect(mockedSaveHoldings).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedDeleteHolding).toHaveBeenCalledWith(1));
     expect(await screen.findByText("Holding deleted!")).toBeInTheDocument();
     expect(screen.queryByText("Apple")).not.toBeInTheDocument();
   });
@@ -207,9 +236,7 @@ describe("App", () => {
 
   it("adds a trade via the Add Trade modal and saves immediately", async () => {
     const user = userEvent.setup();
-    mockedSaveOptionTrades.mockResolvedValue(
-      tradeResponse({ id: 2, origin: "Adam", ticker: "MSFT" }),
-    );
+    mockedCreateOptionTrade.mockResolvedValue(tradeRow({ id: 2, origin: "Adam", ticker: "MSFT" }));
     render(<App />);
 
     await screen.findByText("AAPL");
@@ -219,16 +246,17 @@ describe("App", () => {
     await user.type(screen.getByPlaceholderText("e.g. Sunil"), "Adam");
     await user.type(screen.getByPlaceholderText("AAPL"), "msft");
     await user.selectOptions(screen.getAllByRole("combobox")[1], "short");
+    await fillRequiredTradeFields(user);
     await user.click(screen.getByRole("button", { name: "Add Trade" }));
 
-    await waitFor(() => expect(mockedSaveOptionTrades).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedCreateOptionTrade).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Trade added!")).toBeInTheDocument();
     expect(await screen.findByText("MSFT")).toBeInTheDocument();
   });
 
   it("deletes a trade from the Edit modal after confirmation", async () => {
     const user = userEvent.setup();
-    mockedSaveOptionTrades.mockResolvedValue({ option_trades: [], ibkr_connected: true });
+    mockedDeleteOptionTrade.mockResolvedValue(undefined);
     render(<App />);
 
     await screen.findByText("AAPL");
@@ -238,7 +266,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Delete" }));
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
-    await waitFor(() => expect(mockedSaveOptionTrades).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedDeleteOptionTrade).toHaveBeenCalledWith(1));
     expect(await screen.findByText("Trade deleted!")).toBeInTheDocument();
     expect(screen.queryByText("NVDA")).not.toBeInTheDocument();
   });

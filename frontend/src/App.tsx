@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getHoldings, getOptionTrades, saveHoldings, saveOptionTrades } from "./api";
+import {
+  createHolding,
+  createOptionTrade,
+  deleteHolding,
+  deleteOptionTrade,
+  getHoldings,
+  getOptionTrades,
+  updateHolding,
+  updateOptionTrade,
+} from "./api";
 import { DashboardView } from "./components/DashboardView";
 import { HoldingModal } from "./components/HoldingModal";
 import { HoldingsTable } from "./components/HoldingsTable";
@@ -29,6 +38,12 @@ function withOptionTradeClientKeys(response: OptionTradesResponse): OptionTrade[
   return response.option_trades.map((t) => ({ ...t, clientKey: String(t.id) }));
 }
 
+function computeTotals(holdings: Holding[]): Totals {
+  const market_value = holdings.reduce((sum, h) => sum + h.market_value, 0);
+  const total_cost = holdings.reduce((sum, h) => sum + h.total_cost, 0);
+  return { market_value, total_cost, unrealized_pl: market_value - total_cost };
+}
+
 export default function App() {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [totals, setTotals] = useState<Totals>({
@@ -41,8 +56,6 @@ export default function App() {
   const [modal, setModal] = useState<ModalState>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
   const modalOpenRef = useRef(modal !== null);
-  const nextTempId = useRef(0);
-  const nextTradeTempId = useRef(0);
 
   modalOpenRef.current = modal !== null;
 
@@ -74,45 +87,43 @@ export default function App() {
     "company_name" | "ticker" | "shares_owned" | "avg_price" | "fees"
   >;
 
-  const handleAddSubmit = (fields: HoldingFields) => {
-    nextTempId.current -= 1;
-    const row: Holding = {
-      id: null,
-      clientKey: `new-${nextTempId.current}`,
-      ...fields,
-      current_price: 0,
-      total_cost: 0,
-      market_value: 0,
-      unrealized_pl: 0,
-    };
-    const updated = [...holdings, row];
-    setModal(null);
-    saveHoldings(updated).then((response) => {
-      applyResponse(response);
-      toast("Holding added!");
+  const handleAddSubmit = async (fields: HoldingFields) => {
+    const created = await createHolding(fields);
+    setHoldings((prev) => {
+      const updated = [...prev, { ...created, clientKey: String(created.id) }];
+      setTotals(computeTotals(updated));
+      return updated;
     });
+    setModal(null);
+    toast("Holding added!");
   };
 
-  const handleEditSubmit = (fields: HoldingFields) => {
-    if (modal?.mode !== "edit" || modal.kind !== "holding") return;
-    const updated = holdings.map((row) =>
-      row.clientKey === modal.holding.clientKey ? { ...row, ...fields } : row,
-    );
-    setModal(null);
-    saveHoldings(updated).then((response) => {
-      applyResponse(response);
-      toast("Holding updated!");
+  const handleEditSubmit = async (fields: HoldingFields) => {
+    if (modal?.mode !== "edit" || modal.kind !== "holding" || modal.holding.id === null) return;
+    const updated = await updateHolding(modal.holding.id, fields);
+    setHoldings((prev) => {
+      const next = prev.map((row) =>
+        row.clientKey === modal.holding.clientKey
+          ? { ...updated, clientKey: String(updated.id) }
+          : row,
+      );
+      setTotals(computeTotals(next));
+      return next;
     });
+    setModal(null);
+    toast("Holding updated!");
   };
 
-  const handleDeleteHolding = () => {
-    if (modal?.mode !== "edit" || modal.kind !== "holding") return;
-    const updated = holdings.filter((row) => row.clientKey !== modal.holding.clientKey);
-    setModal(null);
-    saveHoldings(updated).then((response) => {
-      applyResponse(response);
-      toast("Holding deleted!");
+  const handleDeleteHolding = async () => {
+    if (modal?.mode !== "edit" || modal.kind !== "holding" || modal.holding.id === null) return;
+    await deleteHolding(modal.holding.id);
+    setHoldings((prev) => {
+      const next = prev.filter((row) => row.clientKey !== modal.holding.clientKey);
+      setTotals(computeTotals(next));
+      return next;
     });
+    setModal(null);
+    toast("Holding deleted!");
   };
 
   type OptionTradeFields = Pick<
@@ -134,48 +145,33 @@ export default function App() {
     | "contracts"
   >;
 
-  const handleAddTradeSubmit = (fields: OptionTradeFields) => {
-    nextTradeTempId.current -= 1;
-    const row: OptionTrade = {
-      id: null,
-      clientKey: `new-${nextTradeTempId.current}`,
-      ...fields,
-      entry_value: 0,
-      remaining_dte: 0,
-      current_price: 0,
-      pl_open: 0,
-      pct_pl: 0,
-      total_pl: 0,
-      roi: 0,
-    };
-    const updated = [...optionTrades, row];
+  const handleAddTradeSubmit = async (fields: OptionTradeFields) => {
+    const created = await createOptionTrade(fields);
+    setOptionTrades((prev) => [...prev, { ...created, clientKey: String(created.id) }]);
     setModal(null);
-    saveOptionTrades(updated).then((response) => {
-      applyOptionTradesResponse(response);
-      toast("Trade added!");
-    });
+    toast("Trade added!");
   };
 
-  const handleEditTradeSubmit = (fields: OptionTradeFields) => {
-    if (modal?.mode !== "edit" || modal.kind !== "trade") return;
-    const updated = optionTrades.map((row) =>
-      row.clientKey === modal.trade.clientKey ? { ...row, ...fields } : row,
+  const handleEditTradeSubmit = async (fields: OptionTradeFields) => {
+    if (modal?.mode !== "edit" || modal.kind !== "trade" || modal.trade.id === null) return;
+    const updated = await updateOptionTrade(modal.trade.id, fields);
+    setOptionTrades((prev) =>
+      prev.map((row) =>
+        row.clientKey === modal.trade.clientKey
+          ? { ...updated, clientKey: String(updated.id) }
+          : row,
+      ),
     );
     setModal(null);
-    saveOptionTrades(updated).then((response) => {
-      applyOptionTradesResponse(response);
-      toast("Trade updated!");
-    });
+    toast("Trade updated!");
   };
 
-  const handleDeleteTrade = () => {
-    if (modal?.mode !== "edit" || modal.kind !== "trade") return;
-    const updated = optionTrades.filter((row) => row.clientKey !== modal.trade.clientKey);
+  const handleDeleteTrade = async () => {
+    if (modal?.mode !== "edit" || modal.kind !== "trade" || modal.trade.id === null) return;
+    await deleteOptionTrade(modal.trade.id);
+    setOptionTrades((prev) => prev.filter((row) => row.clientKey !== modal.trade.clientKey));
     setModal(null);
-    saveOptionTrades(updated).then((response) => {
-      applyOptionTradesResponse(response);
-      toast("Trade deleted!");
-    });
+    toast("Trade deleted!");
   };
 
   return (

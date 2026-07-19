@@ -1,7 +1,28 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { ValidationError } from "../api";
 import { OptionTradeModal } from "./OptionTradeModal";
+
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByPlaceholderText("e.g. Sunil"), "Sunil");
+  await user.type(screen.getByPlaceholderText("AAPL"), "nvda");
+  await user.type(screen.getByPlaceholderText("e.g. CSP"), "CSP");
+  await user.type(screen.getByPlaceholderText("0"), "100");
+  await user.selectOptions(screen.getAllByRole("combobox")[0], "put");
+  await user.selectOptions(screen.getAllByRole("combobox")[1], "short");
+  const priceInputs = screen.getAllByPlaceholderText("0.00");
+  await user.type(priceInputs[0], "195");
+  await user.type(priceInputs[1], "6.25");
+  await user.type(priceInputs[2], "6.25");
+  await user.type(priceInputs[3], "10000");
+  await user.type(priceInputs[4], "1");
+  await user.type(priceInputs[5], "2");
+
+  const dateInputs = document.body.querySelectorAll('input[type="date"]');
+  fireEvent.change(dateInputs[0], { target: { value: "2026-06-23" } });
+  fireEvent.change(dateInputs[1], { target: { value: "2026-07-31" } });
+}
 
 describe("OptionTradeModal", () => {
   describe("add mode", () => {
@@ -20,30 +41,61 @@ describe("OptionTradeModal", () => {
       expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
     });
 
-    it("shows a validation error and does not submit when origin or ticker is blank", async () => {
+    it("shows per-field validation errors and does not submit when required fields are blank", async () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
       render(<OptionTradeModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       await user.click(screen.getByRole("button", { name: "Add Trade" }));
 
-      expect(screen.getByText("Origin and ticker are required.")).toBeInTheDocument();
+      expect(screen.getByText("Origin is required.")).toBeInTheDocument();
+      expect(screen.getByText("Strategy is required.")).toBeInTheDocument();
+      expect(screen.getByText("Ticker must be 1-5 uppercase letters.")).toBeInTheDocument();
+      expect(screen.getByText("Option type is required.")).toBeInTheDocument();
+      expect(screen.getByText("Direction is required.")).toBeInTheDocument();
+      expect(screen.getByText("Open date is required.")).toBeInTheDocument();
+      expect(screen.getByText("Expiration date is required.")).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it("rejects an expiration date before the open date", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(<OptionTradeModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await fillRequiredFields(user);
+      const dateInputs = document.body.querySelectorAll('input[type="date"]');
+      fireEvent.change(dateInputs[0], { target: { value: "2026-07-31" } });
+      fireEvent.change(dateInputs[1], { target: { value: "2026-06-23" } });
+
+      await user.click(screen.getByRole("button", { name: "Add Trade" }));
+
+      expect(screen.getByText("Expiration date must not be before open date.")).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it("rejects fractional contracts", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(<OptionTradeModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await fillRequiredFields(user);
+      const contracts = screen.getByPlaceholderText("0");
+      await user.clear(contracts);
+      await user.type(contracts, "1.5");
+
+      await user.click(screen.getByRole("button", { name: "Add Trade" }));
+
+      expect(screen.getByText("Contracts must be a whole number.")).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
     });
 
     it("submits a fully-populated row and clears the form", async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(<OptionTradeModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
 
-      await user.type(screen.getByPlaceholderText("e.g. Sunil"), "Sunil");
-      await user.type(screen.getByPlaceholderText("AAPL"), "nvda");
-      await user.type(screen.getByPlaceholderText("e.g. CSP"), "CSP");
-      await user.type(screen.getByPlaceholderText("0"), "100");
-      await user.selectOptions(screen.getAllByRole("combobox")[1], "short");
-      const priceInputs = screen.getAllByPlaceholderText("0.00");
-      await user.type(priceInputs[0], "195");
-      await user.type(priceInputs[1], "6.25");
+      await fillRequiredFields(user);
 
       await user.click(screen.getByRole("button", { name: "Add Trade" }));
 
@@ -51,19 +103,32 @@ describe("OptionTradeModal", () => {
         origin: "Sunil",
         ticker: "NVDA",
         strategy: "CSP",
-        option_type: "",
+        option_type: "put",
         direction: "short",
-        open_date: "",
-        expiration_date: "",
+        open_date: "2026-06-23",
+        expiration_date: "2026-07-31",
         last_trade_date: "",
         strike: 195,
         entry_price: 6.25,
-        buy_price: 0,
-        buying_power: 0,
-        fees: 0,
-        rolls_credit: 0,
+        buy_price: 6.25,
+        buying_power: 10000,
+        fees: 1,
+        rolls_credit: 2,
         contracts: 100,
       });
+    });
+
+    it("shows server-side field errors returned from a failed submit", async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi
+        .fn()
+        .mockRejectedValue(new ValidationError({ strike: "Strike must be greater than 0" }));
+      render(<OptionTradeModal open mode="add" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      await fillRequiredFields(user);
+      await user.click(screen.getByRole("button", { name: "Add Trade" }));
+
+      expect(await screen.findByText("Strike must be greater than 0")).toBeInTheDocument();
     });
 
     it("closes without submitting when Cancel is clicked", async () => {
@@ -117,7 +182,7 @@ describe("OptionTradeModal", () => {
 
     it("submits updated fields", async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(
         <OptionTradeModal
           open
